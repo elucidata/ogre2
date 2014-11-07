@@ -1,0 +1,16 @@
+{
+  "asi": true,
+  "esnext": true,
+  "undef": true,
+  "unused": false,
+  "newcap": false,
+  "nonew": true,
+  "latedef": false,
+  "maxdepth": 4,
+  "browser": true,
+  "node": true,
+  "devel": true,
+
+  "predef": [
+  ]
+}

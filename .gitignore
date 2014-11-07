@@ -1,0 +1,49 @@
+# Numerous always-ignore extensions
+*.diff
+*.err
+*.orig
+*.log
+*.rej
+*.swo
+*.swp
+*.vi
+*~
+*.sass-cache
+
+*.dot.*
+
+# OS or Editor folders
+.DS_Store
+.cache
+.project
+.settings
+.tmproj
+.idea
+.zedstate
+.tags
+nbproject
+Thumbs.db
+tags
+*.sublime-workspace
+
+# NPM packages folder.
+node_modules/
+
+# Brunch folder for temporary files.
+tmp/
+
+# Brunch output folder.
+public/
+www/
+
+# Bower stuff.
+bower_components/
+
+# App stuff.
+.env
+servers.toml
+servers-example.toml
+.syncodemayo.json
+dploy.yaml
+
+.build/*
