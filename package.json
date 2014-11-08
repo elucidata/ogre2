@@ -3,6 +3,15 @@
   "version": "0.2.1",
   "description": "Object Graph engine",
   "main": "index.js",
+  "license": "MIT",
+  "homepage": "https://github.com/elucidata/ogre2",
+  "bugs": {
+    "url": "https://github.com/elucidata/ogre2/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/elucidata/ogre2.git"
+  },
   "browserify": {
     "transform": [
       [
