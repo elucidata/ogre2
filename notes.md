@@ -78,7 +78,10 @@ undoMgr.undo() // Reverts `parent.child2.name`, leaves `parent.child1.name` as i
 ## Questions
 
 ### Key Path Events
-In addition to the `change` event emitted by Ogre, should an event be emitted for each changed key path? Example:
+
+> In addition to the `change` event emitted by Ogre, should an event be emitted  for each changed key path?
+
+**Exploration:**
 
 ``` javascript
 var data= new Ogre({
@@ -98,7 +101,7 @@ data.on('auth.valid', function( newValidValue ){
 })
 ```
 
-This is an interesting idea, but what are the implications? It seems like I'd want to want for changes within a base path, like `data.on('auth')` or `data.on('auth.*')`. EventEmitter doesn't support that AFAIK, I would need a custom implementation (or to support RegExp event names `data.on(/auth\../)`).
+This is an interesting idea, but what are the implications? It seems like I'd want to watch for changes within a base path, like `data.on('auth')` or `data.on('auth.*')`. EventEmitter doesn't support that AFAIK, I would need a custom implementation (or to support RegExp event names `data.on(/auth\../)`).
 
 **Problems:**
 
@@ -106,4 +109,16 @@ I don't think I'm interested in building applications that are reactive to Ogre 
 
 ### Flux Integration
 
-Is there anything Flux-specific that would be useful to add or support?
+> Is there anything Flux-specific that would be useful to add or support?
+
+The [first version of Ogre](https://github.com/elucidata/ogre.js) had support for 'cursors' and change events for arbitrary key paths. Neither are needed, strictly speaking, in a top-down approach of React rendering. But perhaps 'scoping' a subset of an Ogre graph would be useful?
+
+
+``` javascript
+var appState= Ogre({}, { strict:false })
+
+// Elsewhere: In an 'auth' store somewhere...
+var authState= appState.scopedTo('auth')
+
+// Now every call to .get()/.set()/etc would have the paths prefixed with 'auth.'
+```
