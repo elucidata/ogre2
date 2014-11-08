@@ -3,10 +3,13 @@ var React= require('react'),
     randomColor = require('random-color')
 
 var data= new Ogre({
-  items: [
-    { name:'Item 1'}
-  ]
-}), count= 2
+      items: [
+        { name:'Item 1'}
+      ]
+    }, {
+      strict: false
+    }),
+    count= 2
 
 window.data= data
 console.log("Global `data` variable is available for mucking around:", data)
@@ -21,7 +24,9 @@ var Item= React.createClass({
     e.preventDefault()
     console.log('changing', this.props.idx, this.props.item)
     var key= `items.${ this.props.idx }.name`
-    data.set(key, data.get(key) ) // Setting the same value is 'touching' the object, so it will no longer strictly equate (===)
+    // Setting the same value is essentially 'touching' the object, so it
+    // will no longer strictly equate (===)
+    data.set(key, data.get(key) )
   },
 
   actionRemoveItem(e) {
@@ -47,7 +52,9 @@ var Item= React.createClass({
 var Root= React.createClass({
   actionAdd(e) {
     e.preventDefault()
-    data.push('items', { name:('Item '+ count++)})
+    var newItem= { name:('Item '+ count++) }
+    console.log('adding', newItem)
+    data.push('items', newItem)
   },
 
   render() {
@@ -60,7 +67,10 @@ var Root= React.createClass({
         })}
         </ul>
         <button onClick={this.actionAdd}>Add Item</button>
-        <p>Each item gets a newly random color on every <code>render()</code> call. If the color doesn't change, then the underlying items didn't change (<code>this.props.item !== nextProps.item</code>)</p>
+        <p>
+          Each item gets a newly random color on every <code>render()</code>
+          call. If the color doesn't change, then the underlying items didn't
+          change (<code>this.props.item !== nextProps.item</code>)</p>
       </div>
     )
   }
@@ -68,10 +78,10 @@ var Root= React.createClass({
 
 
 function renderRoot() {
-    React.render(
-      <Root items={ data.get('items') }/>,
-      document.body
-    )
+  React.render(
+    <Root items={ data.get('items') }/>,
+    document.body
+  )
 }
 
 data.onChange( renderRoot )

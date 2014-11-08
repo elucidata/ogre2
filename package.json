@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Object Graph engine",
   "main": "index.js",
   "browserify": {
@@ -21,7 +21,7 @@
     ]
   },
   "scripts": {
-    "all": "npm run build && npm run dist && npm run minify && npm run example",
+    "all": "npm run build && npm run dist && npm run minify && npm run example && npm run test",
     "build": "jsx --no-cache-dir --harmony src lib",
     "dist": "NODE_ENV=production browserify src/ogre.js -o dist/ogre.js --standalone Ogre",
     "example": "NODE_ENV=development browserify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js",
@@ -29,7 +29,8 @@
     "watch-example": "watchify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js",
     "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js",
     "test": "tape test/*.js | tap-spec",
-    "test-browser": "browserify -t reactify test/*.js | testlingify"
+    "test-browser": "browserify -t reactify test/*.js | testlingify",
+    "toc": "mdtoc ReadMe.md ReadMe.md"
   },
   "author": "Matt McCray <matt@elucidata.net>",
   "license": "MIT",

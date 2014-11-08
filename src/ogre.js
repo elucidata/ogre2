@@ -5,7 +5,7 @@ var type= require('elucidata-type'),
     update= require('react/lib/update'),
     EventEmitter= require( 'events' ).EventEmitter,
     assign= require('react/lib/Object.assign'),
-    CHANGE_KEY= 'datasource:change'
+    CHANGE_KEY= 'change'
 
 class Ogre extends EventEmitter {
 
@@ -15,27 +15,20 @@ class Ogre extends EventEmitter {
     this._root= initialState || {}
     this._changedKeys= []
     this._timer= null
-    this._previousRoot= null
-    this._history= [] // TODO: Implement a (configurably) full history...
+    this._history= []
     this.options= assign({}, { // Defaults
       batchChanges: true,
-      maxHistory: 1
+      maxHistory: 1,
+      strict: true
     }, options || {})
 
+    // If it's a subclass that implements getInitialState()...
     if( this.getInitialState ) {
       this._root= this.getInitialState( this._root )
     }
   }
 
-  onChange( fn ) {
-    this.on( CHANGE_KEY, fn )
-    return this
-  }
-
-  offChange( fn ) {
-    this.off( CHANGE_KEY, fn )
-    return this
-  }
+  // Querying
 
   get( path, defaultValue ) {
     if( path === '' || path == null ) return this._root // jshint ignore:line
@@ -49,41 +42,7 @@ class Ogre extends EventEmitter {
   }
 
   getPrevious( path ) {
-    return findPath( path, this._previousRoot )
-  }
-
-  set( path, value, create) {
-    this._changeDataset( path, { $set:value }, create)
-    return this
-  }
-
-  push( path, array, create ) {
-    if( type.isNotArray( array )) array= [ array ]
-    this._changeDataset( path, { $push:array }, create)
-    return this
-  }
-
-  unshift( path, array, create ) {
-    if( type.isNotArray( array )) array= [ array ]
-    this._changeDataset( path, { $unshift:array }, create)
-    return this
-  }
-
-  splice( path, start, howMany, ...items) {
-    var spec
-    if( arguments.length === 2 ) {
-      spec= { $splice:start }
-    }
-    else {
-      spec= { $splice:[ [start, howMany].concat( items ) ]}
-    }
-    this._changeDataset( path, spec )
-    return this
-  }
-
-  merge( path, object, create ) {
-    this._changeDataset( path, { $merge:object }, create)
-    return this
+    return findPath( path, this._history[0] || {} )
   }
 
   map( path, fn ) {
@@ -114,6 +73,58 @@ class Ogre extends EventEmitter {
     return this.get( path ).indexOf( test )
   }
 
+  // Mutations
+
+  set( path, value) {
+    this._changeDataset( path, { $set:value }, 'object')
+    return this
+  }
+
+  merge( path, object ) {
+    this._changeDataset( path, { $merge:object }, 'object')
+    return this
+  }
+
+  push( path, array ) {
+    if( type.isNotArray( array )) array= [ array ]
+    this._changeDataset( path, { $push:array }, 'array')
+    return this
+  }
+
+  unshift( path, array ) {
+    if( type.isNotArray( array )) array= [ array ]
+    this._changeDataset( path, { $unshift:array }, 'array')
+    return this
+  }
+
+  splice( path, start, howMany, ...items) {
+    var spec
+    if( arguments.length === 2 ) {
+      spec= { $splice:start }
+    }
+    else {
+      spec= { $splice:[ [start, howMany].concat( items ) ]}
+    }
+    this._changeDataset( path, spec, 'array' )
+    return this
+  }
+
+  // Observing
+
+  onChange( fn ) {
+    this.on( CHANGE_KEY, fn )
+    return this
+  }
+
+  offChange( fn ) {
+    this.off( CHANGE_KEY, fn )
+    return this
+  }
+
+
+
+  // Type checking
+
   isUndefined( path ) { return type.isUndefined( this.get( path )) }
   isNotUndefined( path ) { return type.isNotUndefined( this.get( path )) }
   isDefined( path ) { return type.isNotUndefined( this.get( path )) }
@@ -121,13 +132,17 @@ class Ogre extends EventEmitter {
   isNotNull( path ) { return type.isNotNull( this.get( path )) }
   isEmpty( path ) { return type.isEmpty( this.get( path )) }
   isNotEmpty( path ) { return type.isNotEmpty( this.get( path )) }
+  // Include other types? isString, isArray, isFunction, isObject, etc?
 
-  _changeDataset( path, spec, create ) {
+  _changeDataset( path, spec, containerType ) {
     if( this._changedKeys.length === 0 ) {
-      this._previousRoot= this._root
+      this._history.unshift( this._root )
+      while( this.options.maxHistory >= 0 && this._history.length > this.options.maxHistory ) {
+        this._history.pop()
+      }
     }
-    if( create === true ) {
-      findPath( path, this._root, create )
+    if( this.options.strict === false ) {
+      findPath( path, this._root, true, containerType )
     }
     this._root= update( this._root, buildSpecGraph( path, spec))
     this._scheduleChangeEvent( path )
@@ -153,8 +168,9 @@ class Ogre extends EventEmitter {
 
 }
 
+// Helpers
 
-function findPath( path, source, create ) {
+function findPath( path, source, create, containerType ) {
   path= path || ''
   source= source || {}
   create= (create === true) ? true : false;
@@ -168,9 +184,17 @@ function findPath( path, source, create ) {
 
   while( obj && parts.length ) {
     key= parts.shift()
+
     if( create && type.isUndefined( obj[key] ) ) {
-      obj[ key ]= {}
+
+      if( parts.length == 0 && containerType === 'array') {
+        obj[ key ]= []
+      }
+      else {
+        obj[ key ]= {}
+      }
     }
+
     obj= obj[ key ]
   }
 
@@ -189,24 +213,23 @@ function buildSpecGraph( path, spec ) {
 
   while( parts.length ) {
     key= parts.shift()
+
     if( parts.length === 0 ) {
       obj[ key ]= spec
     }
     else {
       obj[ key ]= {}
     }
+
     obj= obj[ key ]
   }
 
   return graph
 }
 
-var keyCache= {
-  '': ['']
-}
-
 function keyParts( path ) {
   var arr;
+
   if( arr= keyCache[path] ) { // jshint ignore:line
     return arr.concat()
   }
@@ -214,6 +237,10 @@ function keyParts( path ) {
     arr= keyCache[ path ]= path.split('.')
     return arr.concat()
   }
+}
+
+var keyCache= {
+  '': ['']
 }
 
 keyParts.clearCache= function() {

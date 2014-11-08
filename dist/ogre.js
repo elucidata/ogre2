@@ -710,7 +710,7 @@ var type= require('elucidata-type'),
     update= require('react/lib/update'),
     EventEmitter= require( 'events' ).EventEmitter,
     assign= require('react/lib/Object.assign'),
-    CHANGE_KEY= 'datasource:change'
+    CHANGE_KEY= 'change'
 
 for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(EventEmitter____Key)){Ogre[EventEmitter____Key]=EventEmitter[EventEmitter____Key];}}var ____SuperProtoOfEventEmitter=EventEmitter===null?null:EventEmitter.prototype;Ogre.prototype=Object.create(____SuperProtoOfEventEmitter);Ogre.prototype.constructor=Ogre;Ogre.__superConstructor__=EventEmitter;
 
@@ -720,27 +720,20 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
     this.$Ogre_root= initialState || {}
     this.$Ogre_changedKeys= []
     this.$Ogre_timer= null
-    this.$Ogre_previousRoot= null
-    this.$Ogre_history= [] // TODO: Implement a (configurably) full history...
+    this.$Ogre_history= []
     this.options= assign({}, { // Defaults
       batchChanges: true,
-      maxHistory: 1
+      maxHistory: 1,
+      strict: true
     }, options || {})
 
+    // If it's a subclass that implements getInitialState()...
     if( this.getInitialState ) {
       this.$Ogre_root= this.getInitialState( this.$Ogre_root )
     }
   }
 
-  Ogre.prototype.onChange=function(fn)  {"use strict";
-    this.on( CHANGE_KEY, fn )
-    return this
-  };
-
-  Ogre.prototype.offChange=function(fn)  {"use strict";
-    this.off( CHANGE_KEY, fn )
-    return this
-  };
+  // Querying
 
   Ogre.prototype.get=function(path, defaultValue)  {"use strict";
     if( path === '' || path == null ) return this.$Ogre_root // jshint ignore:line
@@ -754,41 +747,7 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   };
 
   Ogre.prototype.getPrevious=function(path)  {"use strict";
-    return findPath( path, this.$Ogre_previousRoot )
-  };
-
-  Ogre.prototype.set=function(path, value, create) {"use strict";
-    this.$Ogre_changeDataset( path, { $set:value }, create)
-    return this
-  };
-
-  Ogre.prototype.push=function(path, array, create)  {"use strict";
-    if( type.isNotArray( array )) array= [ array ]
-    this.$Ogre_changeDataset( path, { $push:array }, create)
-    return this
-  };
-
-  Ogre.prototype.unshift=function(path, array, create)  {"use strict";
-    if( type.isNotArray( array )) array= [ array ]
-    this.$Ogre_changeDataset( path, { $unshift:array }, create)
-    return this
-  };
-
-  Ogre.prototype.splice=function(path, start, howMany)  {"use strict";var items=Array.prototype.slice.call(arguments,3);
-    var spec
-    if( arguments.length === 2 ) {
-      spec= { $splice:start }
-    }
-    else {
-      spec= { $splice:[ [start, howMany].concat( items ) ]}
-    }
-    this.$Ogre_changeDataset( path, spec )
-    return this
-  };
-
-  Ogre.prototype.merge=function(path, object, create)  {"use strict";
-    this.$Ogre_changeDataset( path, { $merge:object }, create)
-    return this
+    return findPath( path, this.$Ogre_history[0] || {} )
   };
 
   Ogre.prototype.map=function(path, fn)  {"use strict";
@@ -819,6 +778,58 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
     return this.get( path ).indexOf( test )
   };
 
+  // Mutations
+
+  Ogre.prototype.set=function(path, value) {"use strict";
+    this.$Ogre_changeDataset( path, { $set:value }, 'object')
+    return this
+  };
+
+  Ogre.prototype.merge=function(path, object)  {"use strict";
+    this.$Ogre_changeDataset( path, { $merge:object }, 'object')
+    return this
+  };
+
+  Ogre.prototype.push=function(path, array)  {"use strict";
+    if( type.isNotArray( array )) array= [ array ]
+    this.$Ogre_changeDataset( path, { $push:array }, 'array')
+    return this
+  };
+
+  Ogre.prototype.unshift=function(path, array)  {"use strict";
+    if( type.isNotArray( array )) array= [ array ]
+    this.$Ogre_changeDataset( path, { $unshift:array }, 'array')
+    return this
+  };
+
+  Ogre.prototype.splice=function(path, start, howMany)  {"use strict";var items=Array.prototype.slice.call(arguments,3);
+    var spec
+    if( arguments.length === 2 ) {
+      spec= { $splice:start }
+    }
+    else {
+      spec= { $splice:[ [start, howMany].concat( items ) ]}
+    }
+    this.$Ogre_changeDataset( path, spec, 'array' )
+    return this
+  };
+
+  // Observing
+
+  Ogre.prototype.onChange=function(fn)  {"use strict";
+    this.on( CHANGE_KEY, fn )
+    return this
+  };
+
+  Ogre.prototype.offChange=function(fn)  {"use strict";
+    this.off( CHANGE_KEY, fn )
+    return this
+  };
+
+
+
+  // Type checking
+
   Ogre.prototype.isUndefined=function(path)  {"use strict"; return type.isUndefined( this.get( path )) };
   Ogre.prototype.isNotUndefined=function(path)  {"use strict"; return type.isNotUndefined( this.get( path )) };
   Ogre.prototype.isDefined=function(path)  {"use strict"; return type.isNotUndefined( this.get( path )) };
@@ -826,13 +837,17 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   Ogre.prototype.isNotNull=function(path)  {"use strict"; return type.isNotNull( this.get( path )) };
   Ogre.prototype.isEmpty=function(path)  {"use strict"; return type.isEmpty( this.get( path )) };
   Ogre.prototype.isNotEmpty=function(path)  {"use strict"; return type.isNotEmpty( this.get( path )) };
+  // Include other types? isString, isArray, isFunction, isObject, etc?
 
-  Ogre.prototype.$Ogre_changeDataset=function(path, spec, create)  {"use strict";
+  Ogre.prototype.$Ogre_changeDataset=function(path, spec, containerType)  {"use strict";
     if( this.$Ogre_changedKeys.length === 0 ) {
-      this.$Ogre_previousRoot= this.$Ogre_root
+      this.$Ogre_history.unshift( this.$Ogre_root )
+      while( this.options.maxHistory >= 0 && this.$Ogre_history.length > this.options.maxHistory ) {
+        this.$Ogre_history.pop()
+      }
     }
-    if( create === true ) {
-      findPath( path, this.$Ogre_root, create )
+    if( this.options.strict === false ) {
+      findPath( path, this.$Ogre_root, true, containerType )
     }
     this.$Ogre_root= update( this.$Ogre_root, buildSpecGraph( path, spec))
     this.$Ogre_scheduleChangeEvent( path )
@@ -858,8 +873,9 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
 
 
 
+// Helpers
 
-function findPath( path, source, create ) {
+function findPath( path, source, create, containerType ) {
   path= path || ''
   source= source || {}
   create= (create === true) ? true : false;
@@ -873,9 +889,17 @@ function findPath( path, source, create ) {
 
   while( obj && parts.length ) {
     key= parts.shift()
+
     if( create && type.isUndefined( obj[key] ) ) {
-      obj[ key ]= {}
+
+      if( parts.length == 0 && containerType === 'array') {
+        obj[ key ]= []
+      }
+      else {
+        obj[ key ]= {}
+      }
     }
+
     obj= obj[ key ]
   }
 
@@ -894,24 +918,23 @@ function buildSpecGraph( path, spec ) {
 
   while( parts.length ) {
     key= parts.shift()
+
     if( parts.length === 0 ) {
       obj[ key ]= spec
     }
     else {
       obj[ key ]= {}
     }
+
     obj= obj[ key ]
   }
 
   return graph
 }
 
-var keyCache= {
-  '': ['']
-}
-
 function keyParts( path ) {
   var arr;
+
   if( arr= keyCache[path] ) { // jshint ignore:line
     return arr.concat()
   }
@@ -919,6 +942,10 @@ function keyParts( path ) {
     arr= keyCache[ path ]= path.split('.')
     return arr.concat()
   }
+}
+
+var keyCache= {
+  '': ['']
 }
 
 keyParts.clearCache= function() {

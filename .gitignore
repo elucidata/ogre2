@@ -46,4 +46,4 @@ servers-example.toml
 .syncodemayo.json
 dploy.yaml
 
-.build/*
+example/js/*
