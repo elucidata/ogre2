@@ -1,0 +1,24 @@
+{
+  "name": "elucidata-ogre2",
+  "main": "dist/ogre.min.js",
+  "version": "0.2.1",
+  "homepage": "https://github.com/elucidata/ogre2",
+  "authors": [
+    "Matt McCray <matt@elucidata.net>"
+  ],
+  "description": "Object Graph Manager",
+  "keywords": [
+    "react",
+    "flux",
+    "object",
+    "graph"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
