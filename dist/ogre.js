@@ -892,7 +892,7 @@ function findPath( path, source, create, containerType ) {
 
     if( create && type.isUndefined( obj[key] ) ) {
 
-      if( parts.length == 0 && containerType === 'array') {
+      if( parts.length === 0 && containerType === 'array') {
         obj[ key ]= []
       }
       else {
