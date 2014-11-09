@@ -118,7 +118,7 @@ class Ogre extends EventEmitter {
   }
 
   offChange( fn ) {
-    this.off( CHANGE_KEY, fn )
+    this.removeListener( CHANGE_KEY, fn )
     return this
   }
 

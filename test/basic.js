@@ -84,6 +84,30 @@ test( '.onChange() events are fired individually if configured so', function(t){
   ds.set('info.more.extra.value', 'Really New')
 })
 
+test('.offChange() should unsubscribe handler from events', function(t){
+  var src= { name:'Ogre', peer:{ name:'Uh huh' }, info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
+      ds= new Ogre(src),
+      callback= function(keys) {
+        t.deepEqual( keys, ['info.more.extra.value', 'peer.name'], "event fired with correct changed key array")
+      }
+
+  t.plan( 2 )
+
+  ds.onChange( callback )
+
+  ds.set('info.more.extra.value', 'New')
+  ds.set('peer.name', 'New')
+
+  // Since we're batching calls, we can't unsubscribe on this tick.
+  setTimeout(function(){
+      ds.offChange( callback )
+      ds.set('peer.name', "Really New!")
+      t.pass('unsubscribed')
+  },1)
+
+
+})
+
 test( 'strict mode fails to create missing key paths', function(t){
   var src= { name:'Ogre', peer:{ name:'Uh huh' }, info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
       ds= new Ogre(src)

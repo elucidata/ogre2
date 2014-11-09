@@ -823,7 +823,7 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   };
 
   Ogre.prototype.offChange=function(fn)  {"use strict";
-    this.off( CHANGE_KEY, fn )
+    this.removeListener( CHANGE_KEY, fn )
     return this
   };
 
