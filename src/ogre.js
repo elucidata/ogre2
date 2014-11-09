@@ -15,7 +15,8 @@ class Ogre extends EventEmitter {
     this._root= initialState || {}
     this._changedKeys= []
     this._timer= null
-    this._history= []
+    this.history= []
+
     this.options= assign({}, { // Defaults
       batchChanges: true,
       maxHistory: 1,
@@ -42,7 +43,7 @@ class Ogre extends EventEmitter {
   }
 
   getPrevious( path ) {
-    return findPath( path, this._history[0] || {} )
+    return findPath( path, this.history[0] || {} )
   }
 
   map( path, fn ) {
@@ -59,8 +60,8 @@ class Ogre extends EventEmitter {
   }
 
   find( path, fn ) {
-    var items= this.get( path )
-    for (var i = 0; i < items.length; i++) {
+    var items= this.get( path ), i, l;
+    for (i= 0, l= items.length; i < l; i++) {
       var item= items[i]
       if( fn( item ) === true ) {
         return item
@@ -136,9 +137,9 @@ class Ogre extends EventEmitter {
 
   _changeDataset( path, spec, containerType ) {
     if( this._changedKeys.length === 0 ) {
-      this._history.unshift( this._root )
-      while( this.options.maxHistory >= 0 && this._history.length > this.options.maxHistory ) {
-        this._history.pop()
+      this.history.unshift( this._root )
+      while( this.options.maxHistory >= 0 && this.history.length > this.options.maxHistory ) {
+        this.history.pop()
       }
     }
     if( this.options.strict === false ) {
@@ -173,7 +174,7 @@ class Ogre extends EventEmitter {
 function findPath( path, source, create, containerType ) {
   path= path || ''
   source= source || {}
-  create= (create === true) ? true : false;
+  create= (create === true) ? true : false
 
   if( path === '') {
     return source

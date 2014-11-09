@@ -1,6 +1,6 @@
-# Ogre 2
+# Ogre
 
-> Object Graph Engine
+> Simple Object Graph Manager
 
 
 ## Contents
@@ -15,8 +15,6 @@
 
 
 ## Overview
-
-Why an *engine*, you ask? 'Cause I needed the 'e' in Ogre to make sense. :)
 
 Built with React in mind, Ogre is a simple graph manager that leverages React's own [immutability helpers](http://facebook.github.io/react/docs/update.html) to update objects without changing the surrounding topography. Allows for efficient object equality checks.
 
