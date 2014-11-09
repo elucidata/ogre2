@@ -39,10 +39,12 @@
     "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js",
     "test": "tape test/*.js | tap-spec",
     "test-browser": "browserify -t reactify test/*.js | testlingify",
-    "toc": "mdtoc ReadMe.md ReadMe.md"
+    "toc": "mdtoc ReadMe.md ReadMe.md",
+    "inc-major": "mversion major",
+    "inc-minor": "mversion minor",
+    "inc-patch": "mversion patch"
   },
   "author": "Matt McCray <matt@elucidata.net>",
-  "license": "MIT",
   "dependencies": {
     "react": "^0.12.0",
     "elucidata-type": "^1.1.1"
@@ -57,6 +59,7 @@
     "tap-spec": "^1.0.1",
     "random-color": "0.0.1",
     "envify": "^3.0.0",
-    "stripify": "^1.2.0"
+    "stripify": "^1.2.0",
+    "mversion": "^1.7.0"
   }
 }
