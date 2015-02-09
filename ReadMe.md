@@ -68,6 +68,12 @@ If `strict` is `false`, Ogre will automatically create all the missing object pa
 
 Returns a lightweight 'cursor' object that has the same API as an Ogre object, but is bound to the specified `path` as the root. If you subscribe to events on cursors, the callbacks will only be triggered when an element of the graph has changed for this `path`.
 
+### `getPrevious( path, step=0)`
+
+Returns data from history. Step 0 is the previous version. If you set the `maxHistory` to a higher amount than the default of 1, you can get values up to that many steps back.
+
+Note: Stored revisions of the graph are for the whole tree.
+
 ### `merge( path, object )`
 ### `push( path, array )`
 ### `unshift( path, array )`
