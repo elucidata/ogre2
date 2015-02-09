@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Object Graph engine",
   "main": "index.js",
   "license": "MIT",
