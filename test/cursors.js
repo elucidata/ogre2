@@ -209,3 +209,9 @@ test( 'test other methods', function( t){
       cursor= src.scopeTo( 'child')
   _.test_other( cursor, t)
 })
+
+test( 'test array key methods', function( t){
+  var src= new Ogre({ child:{ left:{}, right:{} } }, { strict:false }),
+      cursor= src.scopeTo( 'child')
+  _.test_array_keys( cursor, t)
+})

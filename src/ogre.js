@@ -65,10 +65,12 @@ class Ogre  {
     return this.get( path, [] ).map( fn )
   }
 
+  // TODO: Each returns this???
   each( path, fn ) {
     this.get( path, [] ).forEach( fn )
-    return this // TODO: Each returns this???
+    return this
   }
+
   forEach( path, fn ) {
     return this.each( path, fn)
   }
@@ -148,7 +150,6 @@ class Ogre  {
   }
 
 
-
   // Type checking
 
   has( path) {
@@ -172,6 +173,8 @@ class Ogre  {
   isNumber( path ) { return type.isNumber( this.get( path )) }
   isNotNumber( path ) { return type.isNotNumber( this.get( path )) }
 
+
+
   _changeDataset( path, spec, containerType ) {
     if( this._changedKeys.length === 0 ) {
       this.history.unshift( this._root )
@@ -182,11 +185,13 @@ class Ogre  {
     if( this.options.strict === false ) {
       findPath( path, this._root, true, containerType )
     }
+
     this._root= update( this._root, buildSpecGraph( path, spec))
     this._scheduleChangeEvent( path )
   }
 
   _scheduleChangeEvent( key ) {
+    if( type.isArray( key)) key= key.join('.')
     this._changedKeys.push( key )
     if( this.options.batchChanges === true ) {
       if( this._timer === null ) {

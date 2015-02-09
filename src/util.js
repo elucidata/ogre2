@@ -38,9 +38,10 @@ function buildSpecGraph( path, spec ) {
   var graph= {}
   if( path === '') return graph
 
+
   var parts= keyParts( path ),
       obj= graph, key;
-
+      
   while( parts.length ) {
     key= parts.shift()
 
@@ -60,7 +61,9 @@ function buildSpecGraph( path, spec ) {
 function keyParts( path ) {
   var arr;
 
-  if( type.isArray( path)) return path
+  if( type.isArray( path)) {
+    return path.concat()
+  }
 
   if( arr= keyCache[path] ) { // jshint ignore:line
     return arr.concat()

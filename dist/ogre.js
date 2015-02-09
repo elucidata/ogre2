@@ -936,8 +936,16 @@ var type= require( 'elucidata-type'),
       var sub_path= this.basePath
 
       if( path) {
-        sub_path += '.'
-        sub_path += path
+        if( type.isArray( path)) {
+          if( path.length > 0) {
+            sub_path += '.'
+            sub_path += path.join( '.')
+          }
+        }
+        else {
+          sub_path += '.'
+          sub_path += path
+        }
       }
 
       return sub_path
@@ -966,6 +974,7 @@ var type= require( 'elucidata-type'),
 
 
 
+
 [ // Build pass-thru methods...
   'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice',
   'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined',
@@ -974,40 +983,34 @@ var type= require( 'elucidata-type'),
   'isNumber', 'isNotNumber'
 ].map(function( method){
   Cursor.prototype[ method]= function(){
-    if( arguments.length === 0) {
+    var arg_len= arguments.length, path, params
+    if( arg_len === 0) {
       return this.source[ method].call( this.source, this.basePath)
     }
-    else {
-      var $__0=  arguments,path=$__0[0],params=Array.prototype.slice.call($__0,1)
-
-      if( params.length === 0) {
-
-        if( typeof path === 'string' &&
-            method != 'set' &&
-            method != 'push' &&
-            method != 'indexOf' &&
-            method != 'unshift')
-        {
-          return this.source[ method].call( this.source, this.getFullPath( path))
-        }
-        else {
-          return this.source[ method].call( this.source, this.basePath, path)
-        }
+    else if( arg_len === 1) {
+      path= arguments[ 0]
+      if( _assumed_value_methods.has( method)) {
+        return this.source[ method].call( this.source, this.basePath, path)
       }
       else {
-        params.unshift( this.getFullPath( path))
-
-        return this.source[ method].apply( this.source, params)
+        return this.source[ method].call( this.source, this.getFullPath( path))
       }
+    }
+    else {
+      var $__0=  arguments,path=$__0[0],params=Array.prototype.slice.call($__0,1);
+      params.unshift( this.getFullPath( path))
+      return this.source[ method].apply( this.source, params)
     }
   }
 }.bind(this))
 
-// var _sources= new WeakSet(),
-//     _events_for_source= new WeakMap()
-
 var _events_for_source= new Map(),
-    _source_handlers= new WeakMap()
+    _source_handlers= new WeakMap(),
+    _assumed_value_methods= new Set([
+      'set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each',
+      'forEach', 'reduce', 'filter', 'find'
+    ])
+
 
 function onSourceChange( source, key, handler) {
   handleEventsFor( source)
@@ -1153,10 +1156,12 @@ var type= require( 'elucidata-type'),
     return this.get( path, [] ).map( fn )
   };
 
+  // TODO: Each returns this???
   Ogre.prototype.each=function(path, fn)  {"use strict";
     this.get( path, [] ).forEach( fn )
-    return this // TODO: Each returns this???
+    return this
   };
+
   Ogre.prototype.forEach=function(path, fn)  {"use strict";
     return this.each( path, fn)
   };
@@ -1236,7 +1241,6 @@ var type= require( 'elucidata-type'),
   };
 
 
-
   // Type checking
 
   Ogre.prototype.has=function(path) {"use strict";
@@ -1260,6 +1264,8 @@ var type= require( 'elucidata-type'),
   Ogre.prototype.isNumber=function(path)  {"use strict"; return type.isNumber( this.get( path )) };
   Ogre.prototype.isNotNumber=function(path)  {"use strict"; return type.isNotNumber( this.get( path )) };
 
+
+
   Ogre.prototype.$Ogre_changeDataset=function(path, spec, containerType)  {"use strict";
     if( this.$Ogre_changedKeys.length === 0 ) {
       this.history.unshift( this.$Ogre_root )
@@ -1270,11 +1276,13 @@ var type= require( 'elucidata-type'),
     if( this.options.strict === false ) {
       findPath( path, this.$Ogre_root, true, containerType )
     }
+
     this.$Ogre_root= update( this.$Ogre_root, buildSpecGraph( path, spec))
     this.$Ogre_scheduleChangeEvent( path )
   };
 
   Ogre.prototype.$Ogre_scheduleChangeEvent=function(key)  {"use strict";
+    if( type.isArray( key)) key= key.join('.')
     this.$Ogre_changedKeys.push( key )
     if( this.options.batchChanges === true ) {
       if( this.$Ogre_timer === null ) {
@@ -1343,9 +1351,10 @@ function buildSpecGraph( path, spec ) {
   var graph= {}
   if( path === '') return graph
 
+
   var parts= keyParts( path ),
       obj= graph, key;
-
+      
   while( parts.length ) {
     key= parts.shift()
 
@@ -1365,7 +1374,9 @@ function buildSpecGraph( path, spec ) {
 function keyParts( path ) {
   var arr;
 
-  if( type.isArray( path)) return path
+  if( type.isArray( path)) {
+    return path.concat()
+  }
 
   if( arr= keyCache[path] ) { // jshint ignore:line
     return arr.concat()

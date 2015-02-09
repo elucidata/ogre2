@@ -194,3 +194,8 @@ test( 'test other methods', function( t){
   var src= new Ogre({ left:{}, right:{} }, { strict:false })
   _.test_other( src, t)
 })
+
+test( 'test array key methods', function( t){
+  var src= new Ogre({ left:{}, right:{} }, { strict:false })
+  _.test_array_keys( src, t)
+})

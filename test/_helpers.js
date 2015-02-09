@@ -144,9 +144,32 @@ function test_other( ds, t) {
   t.end()
 }
 
+function test_array_keys( ds, t) {
+  t.equal( ds.get(['left']), ds.get('left'), 'get() with array key')
+
+  ds.set(['left', 'name'], "LEFT")
+  t.equal( ds.get(['left', 'name']), "LEFT", 'set() with array key')
+  t.equal( ds.get('left.name'), "LEFT", '... part deux')
+
+  ds.merge(['left'], { other:"OTHER"})
+  t.equal( ds.get(['left', 'other']), "OTHER", 'merge() with array key')
+  t.equal( ds.get('left.other'), "OTHER", '... part deux')
+
+  ds.push(['right', 'list'], 'A')
+  t.equal( ds.get(['right', 'list', '0']), "A", 'push() with array key')
+  t.equal( ds.get('right.list.0'), ds.get(['right', 'list', '0']), '... part deux')
+
+  ds.unshift(['right', 'list'], 'B')
+  t.equal( ds.get(['right', 'list', '0']), "B", 'unshift() with array key')
+  t.equal( ds.get('right.list.0'), ds.get(['right', 'list', '0']), '... part deux')
+
+  t.end()
+}
+
 module.exports= {
   test_object: test_object,
   test_array: test_array,
   test_query: test_query,
-  test_other: test_other
+  test_other: test_other,
+  test_array_keys: test_array_keys
 }

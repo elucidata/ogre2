@@ -29,8 +29,16 @@ class Cursor {
       var sub_path= this.basePath
 
       if( path) {
-        sub_path += '.'
-        sub_path += path
+        if( type.isArray( path)) {
+          if( path.length > 0) {
+            sub_path += '.'
+            sub_path += path.join( '.')
+          }
+        }
+        else {
+          sub_path += '.'
+          sub_path += path
+        }
       }
 
       return sub_path
@@ -59,6 +67,7 @@ class Cursor {
 
 }
 
+
 [ // Build pass-thru methods...
   'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice',
   'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined',
@@ -67,40 +76,34 @@ class Cursor {
   'isNumber', 'isNotNumber'
 ].map(( method)=>{
   Cursor.prototype[ method]= function(){
-    if( arguments.length === 0) {
+    var arg_len= arguments.length, path, params
+    if( arg_len === 0) {
       return this.source[ method].call( this.source, this.basePath)
     }
-    else {
-      var [path, ...params]= arguments
-
-      if( params.length === 0) {
-
-        if( typeof path === 'string' &&
-            method != 'set' &&
-            method != 'push' &&
-            method != 'indexOf' &&
-            method != 'unshift')
-        {
-          return this.source[ method].call( this.source, this.getFullPath( path))
-        }
-        else {
-          return this.source[ method].call( this.source, this.basePath, path)
-        }
+    else if( arg_len === 1) {
+      path= arguments[ 0]
+      if( _assumed_value_methods.has( method)) {
+        return this.source[ method].call( this.source, this.basePath, path)
       }
       else {
-        params.unshift( this.getFullPath( path))
-
-        return this.source[ method].apply( this.source, params)
+        return this.source[ method].call( this.source, this.getFullPath( path))
       }
+    }
+    else {
+      [path, ...params]= arguments
+      params.unshift( this.getFullPath( path))
+      return this.source[ method].apply( this.source, params)
     }
   }
 })
 
-// var _sources= new WeakSet(),
-//     _events_for_source= new WeakMap()
-
 var _events_for_source= new Map(),
-    _source_handlers= new WeakMap()
+    _source_handlers= new WeakMap(),
+    _assumed_value_methods= new Set([
+      'set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each',
+      'forEach', 'reduce', 'filter', 'find'
+    ])
+
 
 function onSourceChange( source, key, handler) {
   handleEventsFor( source)
