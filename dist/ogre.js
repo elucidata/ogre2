@@ -916,23 +916,19 @@ var type= require( 'elucidata-type'),
     this.basePath= type.isArray( basePath) ? basePath.join( '.') : basePath
   }
 
-  Cursor.prototype.dispose=function() {"use strict";
-    this.$Cursor_handlers.forEach(function( fn){
-      this.offChange( fn)
-    }.bind(this))
-  };
-
   Cursor.prototype.scopeTo=function(path) {"use strict";
     return Cursor.forPath( this.basePath +'.'+ path, this.source)
   };
 
   Cursor.prototype.onChange=function(handler) {"use strict";
     onSourceChange( this.source, this.basePath, handler)
+
     return this
   };
 
   Cursor.prototype.offChange=function(handler) {"use strict";
     offSourceChange( this.source, this.basePath, handler)
+
     return this
   };
 
@@ -956,6 +952,7 @@ var type= require( 'elucidata-type'),
     var totalSources= _events_for_source.size,
         totalKeyWatches= 0,
         totalEventHandlers= 0
+
     _events_for_source.forEach(function( key_map, source){
       Object.keys( key_map).forEach(function( key){
         var handlers= key_map[ key]
@@ -963,6 +960,7 @@ var type= require( 'elucidata-type'),
         totalEventHandlers += handlers.length
       })
     })
+
     return { totalSources:totalSources, totalKeyWatches:totalKeyWatches, totalEventHandlers:totalEventHandlers }
   };
 
@@ -981,7 +979,9 @@ var type= require( 'elucidata-type'),
     }
     else {
       var $__0=  arguments,path=$__0[0],params=Array.prototype.slice.call($__0,1)
+
       if( params.length === 0) {
+
         if( typeof path === 'string' &&
             method != 'set' &&
             method != 'push' &&
@@ -996,6 +996,7 @@ var type= require( 'elucidata-type'),
       }
       else {
         params.unshift( this.getFullPath( path))
+
         return this.source[ method].apply( this.source, params)
       }
     }
@@ -1010,20 +1011,25 @@ var _events_for_source= new Map(),
 
 function onSourceChange( source, key, handler) {
   handleEventsFor( source)
+
   var key_map= _events_for_source.get( source)
+
   key_map[ key]= key_map[ key] || []
   key_map[ key].push( handler)
 }
 
 function offSourceChange( source, key, handler) {
   var key_map= _events_for_source.get( source)
+
   key_map[ key]= key_map[ key] || []
   key_map[ key].splice(  key_map[ key].indexOf( handler), 1)
 
   if( key_map[ key].length === 0 ) {
     delete key_map[ key]
+
     if( Object.keys( key_map).length === 0) {
       var src_handler= _source_handlers.get( source)
+
       source.offChange( src_handler)
       _source_handlers.delete( source)
       _events_for_source.delete( source)
@@ -1034,6 +1040,7 @@ function offSourceChange( source, key, handler) {
 function handleEventsFor( source) {
   if(! _events_for_source.has( source)) {
     var handler= globalEventHandler.bind( this, source)
+
     source.onChange( handler)
     _events_for_source.set( source, { })
     _source_handlers.set( source, handler)
@@ -1045,12 +1052,13 @@ function globalEventHandler( source, changedKeys) {
     console.log( "Ghost bug: Cursor#globalEventHandler() called with a source no longer tracked!")
     return
   }
+
   var key_map= _events_for_source.get( source),
       keys= Object.keys( key_map)
 
   if( keys && keys.length) {
-    var i=0, l=changedKeys.length
-    var handlers= [], key, ii=0, ll= keys.length, changedKey
+    var i=0, l=changedKeys.length, handlers= [], key,
+        ii=0, ll= keys.length, changedKey
 
     for( ii=0; ii < ll; ii++ ) {
       key= keys[ ii]
@@ -1060,6 +1068,7 @@ function globalEventHandler( source, changedKeys) {
 
         if( startsWith(changedKey, key)) {
           var callbacks= key_map[ key]
+
           handlers= handlers.concat( callbacks)
           break
         }
