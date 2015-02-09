@@ -1,20 +1,30 @@
 /**
  * Ogre 2
  */
-var type= require('elucidata-type'),
-    update= require('react/lib/update'),
-    EventEmitter= require( 'events' ).EventEmitter,
-    assign= require('react/lib/Object.assign'),
-    CHANGE_KEY= 'change'
+var type= require( 'elucidata-type'),
+    update= require( 'react/lib/update'),
+    assign= require( 'react/lib/Object.assign'),
+    EventEmitter= require( 'events').EventEmitter,
+    Cursor= require( './cursor'),
+    CHANGE_KEY= 'change',
+    {keyParts, findPath, buildSpecGraph}= require( './util')
 
-class Ogre extends EventEmitter {
+    // keyParts= util.keyParts,
+    // findPath= util.findPath,
+    // buildSpecGraph= util.buildSpecGraph
+
+
+class Ogre  {
 
   constructor( initialState, options ) {
-    super()
+    if(! this instanceof Ogre) {
+      return new Ogre( initialState, options )
+    }
 
     this._root= initialState || {}
     this._changedKeys= []
     this._timer= null
+    this._emitter= new EventEmitter()
     this.history= []
 
     this.options= assign({}, { // Defaults
@@ -27,6 +37,10 @@ class Ogre extends EventEmitter {
     if( this.getInitialState ) {
       this._root= this.getInitialState( this._root )
     }
+  }
+
+  scopeTo( path) {
+    return Cursor.forPath( path, this)
   }
 
   // Querying
@@ -42,25 +56,33 @@ class Ogre extends EventEmitter {
       return value
   }
 
-  getPrevious( path ) {
-    return findPath( path, this.history[0] || {} )
+  getPrevious( path, step ) {
+    step= step || 0
+    return findPath( path, this.history[ step] || {} )
   }
 
   map( path, fn ) {
-    return this.get( path ).map( fn )
+    return this.get( path, [] ).map( fn )
   }
 
   each( path, fn ) {
-    this.get( path ).forEach( fn )
+    this.get( path, [] ).forEach( fn )
     return this // TODO: Each returns this???
+  }
+  forEach( path, fn ) {
+    return this.each( path, fn)
   }
 
   filter( path, fn ) {
-    return this.get( path ).filter( fn )
+    return this.get( path, [] ).filter( fn )
+  }
+
+  reduce( path, fn, initialValue ) {
+    return this.get( path, [] ).reduce( fn, initialValue )
   }
 
   find( path, fn ) {
-    var items= this.get( path ), i, l;
+    var items= this.get( path, [] ), i, l;
     for (i= 0, l= items.length; i < l; i++) {
       var item= items[i]
       if( fn( item ) === true ) {
@@ -77,6 +99,9 @@ class Ogre extends EventEmitter {
   // Mutations
 
   set( path, value) {
+    if( arguments.length < 2) {
+      throw new Error("Invalid set() call: Requires path and value.")
+    }
     this._changeDataset( path, { $set:value }, 'object')
     return this
   }
@@ -113,18 +138,22 @@ class Ogre extends EventEmitter {
   // Observing
 
   onChange( fn ) {
-    this.on( CHANGE_KEY, fn )
+    this._emitter.on( CHANGE_KEY, fn )
     return this
   }
 
   offChange( fn ) {
-    this.removeListener( CHANGE_KEY, fn )
+    this._emitter.removeListener( CHANGE_KEY, fn )
     return this
   }
 
 
 
   // Type checking
+
+  has( path) {
+    return this.isNotEmpty( path)
+  }
 
   isUndefined( path ) { return type.isUndefined( this.get( path )) }
   isNotUndefined( path ) { return type.isNotUndefined( this.get( path )) }
@@ -133,7 +162,15 @@ class Ogre extends EventEmitter {
   isNotNull( path ) { return type.isNotNull( this.get( path )) }
   isEmpty( path ) { return type.isEmpty( this.get( path )) }
   isNotEmpty( path ) { return type.isNotEmpty( this.get( path )) }
-  // Include other types? isString, isArray, isFunction, isObject, etc?
+
+  isString( path ) { return type.isString( this.get( path )) }
+  isNotString( path ) { return type.isNotString( this.get( path )) }
+  isArray( path ) { return type.isArray( this.get( path )) }
+  isNotArray( path ) { return type.isNotArray( this.get( path )) }
+  isObject( path ) { return type.isObject( this.get( path )) }
+  isNotObject( path ) { return type.isNotObject( this.get( path )) }
+  isNumber( path ) { return type.isNumber( this.get( path )) }
+  isNotNumber( path ) { return type.isNotNumber( this.get( path )) }
 
   _changeDataset( path, spec, containerType ) {
     if( this._changedKeys.length === 0 ) {
@@ -162,92 +199,17 @@ class Ogre extends EventEmitter {
   }
 
   _sendChangeEvents() {
-    this.emit( CHANGE_KEY, this._changedKeys )
+    this._emitter.emit( CHANGE_KEY, this._changedKeys )
     this._changedKeys= []
     this._timer= null
+  }
+
+  _clearKeyCache() {
+    keyParts.clearCache()
   }
 
 }
 
 // Helpers
-
-function findPath( path, source, create, containerType ) {
-  path= path || ''
-  source= source || {}
-  create= (create === true) ? true : false
-
-  if( path === '') {
-    return source
-  }
-
-  var parts= keyParts( path ),
-      obj= source, key;
-
-  while( obj && parts.length ) {
-    key= parts.shift()
-
-    if( create && type.isUndefined( obj[key] ) ) {
-
-      if( parts.length === 0 && containerType === 'array') {
-        obj[ key ]= []
-      }
-      else {
-        obj[ key ]= {}
-      }
-    }
-
-    obj= obj[ key ]
-  }
-
-  return obj
-}
-
-function buildSpecGraph( path, spec ) {
-  path= path || ''
-  spec= spec || {}
-
-  var graph= {}
-  if( path === '') return graph
-
-  var parts= keyParts( path ),
-      obj= graph, key;
-
-  while( parts.length ) {
-    key= parts.shift()
-
-    if( parts.length === 0 ) {
-      obj[ key ]= spec
-    }
-    else {
-      obj[ key ]= {}
-    }
-
-    obj= obj[ key ]
-  }
-
-  return graph
-}
-
-function keyParts( path ) {
-  var arr;
-
-  if( arr= keyCache[path] ) { // jshint ignore:line
-    return arr.concat()
-  }
-  else {
-    arr= keyCache[ path ]= path.split('.')
-    return arr.concat()
-  }
-}
-
-var keyCache= {
-  '': ['']
-}
-
-keyParts.clearCache= function() {
-  keyCache= {
-    '': ['']
-  }
-}
 
 module.exports= Ogre

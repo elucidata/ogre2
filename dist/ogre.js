@@ -399,6 +399,208 @@ function isUndefined(arg) {
 }).call(this);
 
 },{}],3:[function(require,module,exports){
+(function (global){
+(function (exports) {'use strict';
+  //shared pointer
+  var i;
+  //shortcuts
+  var defineProperty = Object.defineProperty, is = Object.is;
+
+
+  //Polyfill global objects
+  if (typeof WeakMap == 'undefined') {
+    exports.WeakMap = createCollection({
+      // WeakMap#delete(key:void*):boolean
+      'delete': sharedDelete,
+      // WeakMap#clear():
+      clear: sharedClear,
+      // WeakMap#get(key:void*):void*
+      get: sharedGet,
+      // WeakMap#has(key:void*):boolean
+      has: mapHas,
+      // WeakMap#set(key:void*, value:void*):void
+      set: sharedSet
+    }, true);
+  }
+
+  if (typeof Map == 'undefined') {
+    exports.Map = createCollection({
+      // WeakMap#delete(key:void*):boolean
+      'delete': sharedDelete,
+      //:was Map#get(key:void*[, d3fault:void*]):void*
+      // Map#has(key:void*):boolean
+      has: mapHas,
+      // Map#get(key:void*):boolean
+      get: sharedGet,
+      // Map#set(key:void*, value:void*):void
+      set: sharedSet,
+      // Map#keys(void):Array === not in specs
+      keys: sharedKeys,
+      // Map#values(void):Array === not in specs
+      values: sharedValues,
+      // Map#forEach(callback:Function, context:void*):void ==> callback.call(context, key, value, mapObject) === not in specs`
+      forEach: sharedForEach,
+      // Map#clear():
+      clear: sharedClear
+    });
+  }
+
+  if (typeof Set == 'undefined') {
+    exports.Set = createCollection({
+      // Set#has(value:void*):boolean
+      has: setHas,
+      // Set#add(value:void*):boolean
+      add: sharedAdd,
+      // Set#delete(key:void*):boolean
+      'delete': sharedDelete,
+      // Set#clear():
+      clear: sharedClear,
+      // Set#values(void):Array === not in specs
+      values: sharedValues,
+      // Set#forEach(callback:Function, context:void*):void ==> callback.call(context, value, index) === not in specs
+      forEach: sharedSetIterate
+    });
+  }
+
+  if (typeof WeakSet == 'undefined') {
+    exports.WeakSet = createCollection({
+      // WeakSet#delete(key:void*):boolean
+      'delete': sharedDelete,
+      // WeakSet#add(value:void*):boolean
+      add: sharedAdd,
+      // WeakSet#clear():
+      clear: sharedClear,
+      // WeakSet#has(value:void*):boolean
+      has: setHas
+    }, true);
+  }
+
+
+  /**
+   * ES6 collection constructor
+   * @return {Function} a collection class
+   */
+  function createCollection(proto, objectOnly){
+    function Collection(a){
+      if (!this || this.constructor !== Collection) return new Collection(a);
+      this._keys = [];
+      this._values = [];
+      this.objectOnly = objectOnly;
+
+      //parse initial iterable argument passed
+      if (a) init.call(this, a);
+    }
+
+    //define size for non object-only collections
+    if (!objectOnly) {
+      defineProperty(proto, 'size', {
+        get: sharedSize
+      });
+    }
+
+    //set prototype
+    proto.constructor = Collection;
+    Collection.prototype = proto;
+
+    return Collection;
+  }
+
+
+  /** parse initial iterable argument passed */
+  function init(a){
+    var i;
+    //init Set argument, like `[1,2,3,{}]`
+    if (this.add)
+      a.forEach(this.add, this);
+    //init Map argument like `[[1,2], [{}, 4]]`
+    else
+      a.forEach(function(a){this.set(a[0],a[1])}, this);
+  }
+
+
+  /** delete */
+  function sharedDelete(key) {
+    if (this.has(key)) {
+      this._keys.splice(i, 1);
+      this._values.splice(i, 1);
+    }
+    // Aurora here does it while Canary doesn't
+    return -1 < i;
+  };
+
+  function sharedGet(key) {
+    return this.has(key) ? this._values[i] : undefined;
+  }
+
+  function has(list, key) {
+    if (this.objectOnly && key !== Object(key))
+      throw new TypeError("Invalid value used as weak collection key");
+    //NaN or 0 passed
+    if (key != key || key === 0) for (i = list.length; i-- && !is(list[i], key););
+    else i = list.indexOf(key);
+    return -1 < i;
+  }
+
+  function setHas(value) {
+    return has.call(this, this._values, value);
+  }
+
+  function mapHas(value) {
+    return has.call(this, this._keys, value);
+  }
+
+  /** @chainable */
+  function sharedSet(key, value) {
+    this.has(key) ?
+      this._values[i] = value
+      :
+      this._values[this._keys.push(key) - 1] = value
+    ;
+    return this;
+  }
+
+  /** @chainable */
+  function sharedAdd(value) {
+    if (!this.has(value)) this._values.push(value);
+    return this;
+  }
+
+  function sharedClear() {
+    this._values.length = 0;
+  }
+
+  /** keys, values, and iterate related methods */
+  function sharedValues() {
+    return this._values.slice();
+  }
+
+  function sharedKeys() {
+    return this._keys.slice();
+  }
+
+  function sharedSize() {
+    return this._values.length;
+  }
+
+  function sharedForEach(callback, context) {
+    var self = this;
+    var values = self._values.slice();
+    self._keys.slice().forEach(function(key, n){
+      callback.call(context, values[n], key, self);
+    });
+  }
+
+  function sharedSetIterate(callback, context) {
+    var self = this;
+    self._values.slice().forEach(function(value){
+      callback.call(context, value, value, self);
+    });
+  }
+
+})(typeof exports != 'undefined' && typeof global != 'undefined' ? global : window );
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{}],4:[function(require,module,exports){
 /**
  * Copyright 2014, Facebook, Inc.
  * All rights reserved.
@@ -445,7 +647,7 @@ function assign(target, sources) {
 
 module.exports = assign;
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -500,7 +702,7 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -536,7 +738,7 @@ var keyOf = function(oneKeyObj) {
 
 module.exports = keyOf;
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -702,24 +904,206 @@ function update(value, spec) {
 
 module.exports = update;
 
-},{"./Object.assign":3,"./invariant":4,"./keyOf":5}],7:[function(require,module,exports){
+},{"./Object.assign":4,"./invariant":5,"./keyOf":6}],8:[function(require,module,exports){
+var type= require( 'elucidata-type'),
+    shim= require( 'es6-collections'),
+    $__0= require( './util'),startsWith=$__0.startsWith
+
+
+
+  function Cursor(source, basePath) {"use strict";
+    this.source= source
+    this.basePath= type.isArray( basePath) ? basePath.join( '.') : basePath
+  }
+
+  Cursor.prototype.dispose=function() {"use strict";
+    this.$Cursor_handlers.forEach(function( fn){
+      this.offChange( fn)
+    }.bind(this))
+  };
+
+  Cursor.prototype.scopeTo=function(path) {"use strict";
+    return Cursor.forPath( this.basePath +'.'+ path, this.source)
+  };
+
+  Cursor.prototype.onChange=function(handler) {"use strict";
+    onSourceChange( this.source, this.basePath, handler)
+    return this
+  };
+
+  Cursor.prototype.offChange=function(handler) {"use strict";
+    offSourceChange( this.source, this.basePath, handler)
+    return this
+  };
+
+  Cursor.prototype.getFullPath=function(path) {"use strict";
+      var sub_path= this.basePath
+
+      if( path) {
+        sub_path += '.'
+        sub_path += path
+      }
+
+      return sub_path
+  };
+
+  Cursor.forPath=function(path, source) {"use strict";
+    return new Cursor( source, path)
+  };
+
+  // Just for internal, testing, usage!
+  Cursor.listenerInfo=function() {"use strict";
+    var totalSources= _events_for_source.size,
+        totalKeyWatches= 0,
+        totalEventHandlers= 0
+    _events_for_source.forEach(function( key_map, source){
+      Object.keys( key_map).forEach(function( key){
+        var handlers= key_map[ key]
+        totalKeyWatches += 1
+        totalEventHandlers += handlers.length
+      })
+    })
+    return { totalSources:totalSources, totalKeyWatches:totalKeyWatches, totalEventHandlers:totalEventHandlers }
+  };
+
+
+
+[ // Build pass-thru methods...
+  'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice',
+  'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined',
+  'isNotUndefined', 'isDefined', 'isNull', 'isNotNull', 'isEmpty', 'isNotEmpty',
+  'isString', 'isNotString', 'isArray', 'isNotArray', 'isObject', 'isNotObject',
+  'isNumber', 'isNotNumber'
+].map(function( method){
+  Cursor.prototype[ method]= function(){
+    if( arguments.length === 0) {
+      return this.source[ method].call( this.source, this.basePath)
+    }
+    else {
+      var $__0=  arguments,path=$__0[0],params=Array.prototype.slice.call($__0,1)
+      if( params.length === 0) {
+        if( typeof path === 'string' &&
+            method != 'set' &&
+            method != 'push' &&
+            method != 'indexOf' &&
+            method != 'unshift')
+        {
+          return this.source[ method].call( this.source, this.getFullPath( path))
+        }
+        else {
+          return this.source[ method].call( this.source, this.basePath, path)
+        }
+      }
+      else {
+        params.unshift( this.getFullPath( path))
+        return this.source[ method].apply( this.source, params)
+      }
+    }
+  }
+}.bind(this))
+
+// var _sources= new WeakSet(),
+//     _events_for_source= new WeakMap()
+
+var _events_for_source= new Map(),
+    _source_handlers= new WeakMap()
+
+function onSourceChange( source, key, handler) {
+  handleEventsFor( source)
+  var key_map= _events_for_source.get( source)
+  key_map[ key]= key_map[ key] || []
+  key_map[ key].push( handler)
+}
+
+function offSourceChange( source, key, handler) {
+  var key_map= _events_for_source.get( source)
+  key_map[ key]= key_map[ key] || []
+  key_map[ key].splice(  key_map[ key].indexOf( handler), 1)
+
+  if( key_map[ key].length === 0 ) {
+    delete key_map[ key]
+    if( Object.keys( key_map).length === 0) {
+      var src_handler= _source_handlers.get( source)
+      source.offChange( src_handler)
+      _source_handlers.delete( source)
+      _events_for_source.delete( source)
+    }
+  }
+}
+
+function handleEventsFor( source) {
+  if(! _events_for_source.has( source)) {
+    var handler= globalEventHandler.bind( this, source)
+    source.onChange( handler)
+    _events_for_source.set( source, { })
+    _source_handlers.set( source, handler)
+  }
+}
+
+function globalEventHandler( source, changedKeys) {
+  if(! _events_for_source.has( source)) {
+    console.log( "Ghost bug: Cursor#globalEventHandler() called with a source no longer tracked!")
+    return
+  }
+  var key_map= _events_for_source.get( source),
+      keys= Object.keys( key_map)
+
+  if( keys && keys.length) {
+    var i=0, l=changedKeys.length
+    var handlers= [], key, ii=0, ll= keys.length, changedKey
+
+    for( ii=0; ii < ll; ii++ ) {
+      key= keys[ ii]
+
+      for (; i < l; i++) {
+        changedKey= changedKeys[ i]
+
+        if( startsWith(changedKey, key)) {
+          var callbacks= key_map[ key]
+          handlers= handlers.concat( callbacks)
+          break
+        }
+      }
+    }
+
+    if( handlers.length) {
+      handlers.forEach(function( fn){
+        fn( changedKeys)
+      })
+    }
+  }
+}
+
+module.exports= Cursor
+
+},{"./util":10,"elucidata-type":2,"es6-collections":3}],9:[function(require,module,exports){
 /**
  * Ogre 2
  */
-var type= require('elucidata-type'),
-    update= require('react/lib/update'),
-    EventEmitter= require( 'events' ).EventEmitter,
-    assign= require('react/lib/Object.assign'),
-    CHANGE_KEY= 'change'
+var type= require( 'elucidata-type'),
+    update= require( 'react/lib/update'),
+    assign= require( 'react/lib/Object.assign'),
+    EventEmitter= require( 'events').EventEmitter,
+    Cursor= require( './cursor'),
+    CHANGE_KEY= 'change',
+    $__0=   require( './util'),keyParts=$__0.keyParts,findPath=$__0.findPath,buildSpecGraph=$__0.buildSpecGraph
 
-for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(EventEmitter____Key)){Ogre[EventEmitter____Key]=EventEmitter[EventEmitter____Key];}}var ____SuperProtoOfEventEmitter=EventEmitter===null?null:EventEmitter.prototype;Ogre.prototype=Object.create(____SuperProtoOfEventEmitter);Ogre.prototype.constructor=Ogre;Ogre.__superConstructor__=EventEmitter;
+    // keyParts= util.keyParts,
+    // findPath= util.findPath,
+    // buildSpecGraph= util.buildSpecGraph
+
+
+
 
   function Ogre(initialState, options)  {"use strict";
-    EventEmitter.call(this)
+    if(! this instanceof Ogre) {
+      return new Ogre( initialState, options )
+    }
 
     this.$Ogre_root= initialState || {}
     this.$Ogre_changedKeys= []
     this.$Ogre_timer= null
+    this.$Ogre_emitter= new EventEmitter()
     this.history= []
 
     this.options= assign({}, { // Defaults
@@ -734,6 +1118,10 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
     }
   }
 
+  Ogre.prototype.scopeTo=function(path) {"use strict";
+    return Cursor.forPath( path, this)
+  };
+
   // Querying
 
   Ogre.prototype.get=function(path, defaultValue)  {"use strict";
@@ -747,25 +1135,33 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
       return value
   };
 
-  Ogre.prototype.getPrevious=function(path)  {"use strict";
-    return findPath( path, this.history[0] || {} )
+  Ogre.prototype.getPrevious=function(path, step)  {"use strict";
+    step= step || 0
+    return findPath( path, this.history[ step] || {} )
   };
 
   Ogre.prototype.map=function(path, fn)  {"use strict";
-    return this.get( path ).map( fn )
+    return this.get( path, [] ).map( fn )
   };
 
   Ogre.prototype.each=function(path, fn)  {"use strict";
-    this.get( path ).forEach( fn )
+    this.get( path, [] ).forEach( fn )
     return this // TODO: Each returns this???
+  };
+  Ogre.prototype.forEach=function(path, fn)  {"use strict";
+    return this.each( path, fn)
   };
 
   Ogre.prototype.filter=function(path, fn)  {"use strict";
-    return this.get( path ).filter( fn )
+    return this.get( path, [] ).filter( fn )
+  };
+
+  Ogre.prototype.reduce=function(path, fn, initialValue)  {"use strict";
+    return this.get( path, [] ).reduce( fn, initialValue )
   };
 
   Ogre.prototype.find=function(path, fn)  {"use strict";
-    var items= this.get( path ), i, l;
+    var items= this.get( path, [] ), i, l;
     for (i= 0, l= items.length; i < l; i++) {
       var item= items[i]
       if( fn( item ) === true ) {
@@ -782,6 +1178,9 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   // Mutations
 
   Ogre.prototype.set=function(path, value) {"use strict";
+    if( arguments.length < 2) {
+      throw new Error("Invalid set() call: Requires path and value.")
+    }
     this.$Ogre_changeDataset( path, { $set:value }, 'object')
     return this
   };
@@ -818,18 +1217,22 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   // Observing
 
   Ogre.prototype.onChange=function(fn)  {"use strict";
-    this.on( CHANGE_KEY, fn )
+    this.$Ogre_emitter.on( CHANGE_KEY, fn )
     return this
   };
 
   Ogre.prototype.offChange=function(fn)  {"use strict";
-    this.removeListener( CHANGE_KEY, fn )
+    this.$Ogre_emitter.removeListener( CHANGE_KEY, fn )
     return this
   };
 
 
 
   // Type checking
+
+  Ogre.prototype.has=function(path) {"use strict";
+    return this.isNotEmpty( path)
+  };
 
   Ogre.prototype.isUndefined=function(path)  {"use strict"; return type.isUndefined( this.get( path )) };
   Ogre.prototype.isNotUndefined=function(path)  {"use strict"; return type.isNotUndefined( this.get( path )) };
@@ -838,7 +1241,15 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   Ogre.prototype.isNotNull=function(path)  {"use strict"; return type.isNotNull( this.get( path )) };
   Ogre.prototype.isEmpty=function(path)  {"use strict"; return type.isEmpty( this.get( path )) };
   Ogre.prototype.isNotEmpty=function(path)  {"use strict"; return type.isNotEmpty( this.get( path )) };
-  // Include other types? isString, isArray, isFunction, isObject, etc?
+
+  Ogre.prototype.isString=function(path)  {"use strict"; return type.isString( this.get( path )) };
+  Ogre.prototype.isNotString=function(path)  {"use strict"; return type.isNotString( this.get( path )) };
+  Ogre.prototype.isArray=function(path)  {"use strict"; return type.isArray( this.get( path )) };
+  Ogre.prototype.isNotArray=function(path)  {"use strict"; return type.isNotArray( this.get( path )) };
+  Ogre.prototype.isObject=function(path)  {"use strict"; return type.isObject( this.get( path )) };
+  Ogre.prototype.isNotObject=function(path)  {"use strict"; return type.isNotObject( this.get( path )) };
+  Ogre.prototype.isNumber=function(path)  {"use strict"; return type.isNumber( this.get( path )) };
+  Ogre.prototype.isNotNumber=function(path)  {"use strict"; return type.isNotNumber( this.get( path )) };
 
   Ogre.prototype.$Ogre_changeDataset=function(path, spec, containerType)  {"use strict";
     if( this.$Ogre_changedKeys.length === 0 ) {
@@ -867,14 +1278,23 @@ for(var EventEmitter____Key in EventEmitter){if(EventEmitter.hasOwnProperty(Even
   };
 
   Ogre.prototype.$Ogre_sendChangeEvents=function() {"use strict";
-    this.emit( CHANGE_KEY, this.$Ogre_changedKeys )
+    this.$Ogre_emitter.emit( CHANGE_KEY, this.$Ogre_changedKeys )
     this.$Ogre_changedKeys= []
     this.$Ogre_timer= null
+  };
+
+  Ogre.prototype.$Ogre_clearKeyCache=function() {"use strict";
+    keyParts.clearCache()
   };
 
 
 
 // Helpers
+
+module.exports= Ogre
+
+},{"./cursor":8,"./util":10,"elucidata-type":2,"events":1,"react/lib/Object.assign":4,"react/lib/update":7}],10:[function(require,module,exports){
+var type= require( 'elucidata-type')
 
 function findPath( path, source, create, containerType ) {
   path= path || ''
@@ -936,6 +1356,8 @@ function buildSpecGraph( path, spec ) {
 function keyParts( path ) {
   var arr;
 
+  if( type.isArray( path)) return path
+
   if( arr= keyCache[path] ) { // jshint ignore:line
     return arr.concat()
   }
@@ -955,7 +1377,50 @@ keyParts.clearCache= function() {
   }
 }
 
-module.exports= Ogre
+var _last_id = 0
 
-},{"elucidata-type":2,"events":1,"react/lib/Object.assign":3,"react/lib/update":6}]},{},[7])(7)
+function uid ( radix){
+  var now = Math.floor( (new Date()).getTime() / 1000 )
+  radix= radix || 36
+
+  while ( now <= _last_id ) {
+    now += 1
+  }
+
+  _last_id= now
+
+  return now.toString( radix)
+}
+
+/* global performance */
+var now= (function(){
+  if( typeof performance === 'object' && performance.now ) {
+    return performance.now.bind( performance )
+  }
+  else if( Date.now ) {
+    return Date.now.bind(Date)
+  }
+  else {
+    return function() {
+      return (new Date()).getTime()
+    }
+  }
+})()
+
+function startsWith( haystack, needle, position) {
+  position = position || 0;
+  return haystack.lastIndexOf(needle, position) === position;
+}
+
+
+module.exports= {
+  keyParts:keyParts,
+  findPath:findPath,
+  buildSpecGraph:buildSpecGraph,
+  uid:uid,
+  now:now,
+  startsWith:startsWith
+}
+
+},{"elucidata-type":2}]},{},[9])(9)
 });

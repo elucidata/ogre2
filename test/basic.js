@@ -1,6 +1,7 @@
 var Ogre= require('../'), type= require('elucidata-type'),
     // test= require('prova')
-    test= require('tape')
+    test= require('tape'),
+    _= require( './_helpers')
 
 
 test( 'Basic tests', function( t ){
@@ -24,6 +25,18 @@ test( '.get() returns correct values', function(t){
   t.end()
 })
 
+test( '.get() returns correct values for array keys too', function(t){
+  var src= { name:'Ogre', info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
+      ds= new Ogre(src)
+
+  t.equal( src, ds.get([]), "returned value is the same object.")
+  t.equal( ds.get(['info','version']), 2, 'simple key path traversal')
+  t.equal( ds.get(['info','more','extra','value']), 'STUFF', 'deeply nested key path traversal')
+  t.equal( ds.get(['info','more','extra']), src.info.more.extra, 'object fetched is same as source, if unchanged')
+
+  t.end()
+})
+
 test( '.set() only modifies changed objects', function(t){
   var src= { name:'Ogre', peer:{ name:'Uh huh' }, info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
       ds= new Ogre(src)
@@ -33,6 +46,19 @@ test( '.set() only modifies changed objects', function(t){
   t.notEqual( ds.get(), src, 'returned value is a new object.')
   t.equal( ds.get('peer'), src.peer, 'unchanged branch is still the same object')
   t.notEqual( ds.get('info.more.extra'), src.info.more.extra, 'changed branch is new object')
+
+  t.end()
+})
+
+test( '.set() only modifies changed objects using array keys too', function(t){
+  var src= { name:'Ogre', peer:{ name:'Uh huh' }, info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
+      ds= new Ogre(src)
+
+  ds.set(['info','more','extra','value'], 'New')
+
+  t.notEqual( ds.get(), src, 'returned value is a new object.')
+  t.equal( ds.get(['peer']), src.peer, 'unchanged branch is still the same object')
+  t.notEqual( ds.get(['info','more','extra']), src.info.more.extra, 'changed branch is new object')
 
   t.end()
 })
@@ -146,4 +172,25 @@ test( 'non-strict mode creates missing key paths', function(t){
   t.equal( type(ds.get('test.unshift')), 'array', 'result of unshift is array')
   t.equal( type(ds.get('test.splice')), 'array', 'result of splice is array')
 
+})
+
+test( 'test object-like mutators', function( t){
+  var src= new Ogre({ left:{}, right:{} }, { strict:false })
+  _.test_object( src, t)
+})
+
+test( 'test array-like mutators', function( t){
+  var src= new Ogre({ left:{}, right:{} }, { strict:false })
+  _.test_array( src, t)
+})
+
+
+test( 'test query methods', function( t){
+  var src= new Ogre({ left:{}, right:{} }, { strict:false })
+  _.test_query( src, t)
+})
+
+test( 'test other methods', function( t){
+  var src= new Ogre({ left:{}, right:{} }, { strict:false })
+  _.test_other( src, t)
 })

@@ -12,6 +12,8 @@ var data= new Ogre({
     count= 2
 
 window.data= data
+window.Ogre= Ogre
+
 console.log("Global `data` variable is available for mucking around:", data)
 
 var Item= React.createClass({
@@ -61,12 +63,13 @@ var Root= React.createClass({
     return (
       <div>
         <h4>Items:</h4>
+        <button onClick={this.actionAdd}>Add Item</button>
         <ul>
         { this.props.items.map((item, i)=>{
             return <Item key={item.name} item={item} idx={i}/>
         })}
         </ul>
-        <button onClick={this.actionAdd}>Add Item</button>
+
         <p>
           Each item gets a newly random color on every <code>render()</code>
           call. If the color doesn't change, then the underlying items didn't

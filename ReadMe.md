@@ -49,7 +49,7 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 
 
 ## API
-### `new Ogre( defaultState={}, options={} )`
+### `new Ogre( intialState={}, options={} )`
 
 **Options:**
 
@@ -60,25 +60,22 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 | `strict`       | Throw error when mutating non-existing key paths       | true    |
 
 ### `get( path, defaultValue )`
-
 ### `set( path, value )`
 
 ### `merge( path, object )`
-
 ### `push( path, array )`
-
 ### `unshift( path, array )`
-
 ### `splice( path, start, howMany, ...items) {`
 
 ### `map( path, fn )`
 ### `each( path, fn )`
+### `forEach( path, fn )`
 ### `filter( path, fn )`
 ### `find( path, fn )`
 ### `indexOf( path, value )`
+### `reduce( path, fn, initialValue )`
 
 ### `onChange( handlerFn )`
-
 ### `offChange( handlerFn )`
 
 ### `isUndefined( path )`
@@ -88,13 +85,21 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 ### `isNotNull( path )`
 ### `isEmpty( path )`
 ### `isNotEmpty( path )`
-
+### `isString( path )`
+### `isNotString( path )`
+### `isArray( path )`
+### `isNotArray( path )`
+### `isObject( path )`
+### `isNotObject( path )`
+### `isNumber( path )`
+### `isNotNumber( path )`
 
 ## Todo
 
 - Flesh out API docs.
 - More examples.
 - Better test coverage.
+- Add more array method support?
 
 
 ## Building

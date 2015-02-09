@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Object Graph engine",
   "main": "index.js",
   "license": "MIT",
@@ -47,7 +47,8 @@
   "author": "Matt McCray <matt@elucidata.net>",
   "dependencies": {
     "react": "^0.12.0",
-    "elucidata-type": "^1.1.1"
+    "elucidata-type": "^1.1.1",
+    "es6-collections": "^0.4.1"
   },
   "devDependencies": {
     "tape": "^3.0.2",
