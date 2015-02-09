@@ -1,6 +1,6 @@
 # Ogre
 
-> Simple Object Graph Manager
+> Object Graph Manager
 
 
 ## Contents
@@ -49,7 +49,7 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 
 
 ## API
-### `new Ogre( intialState={}, options={} )`
+### `new Ogre( initialState={}, options={} )`
 
 **Options:**
 
@@ -59,8 +59,14 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 | `batchChanges` | Batch synchronous mutations into single 'change' event | true    |
 | `strict`       | Throw error when mutating non-existing key paths       | true    |
 
+If `strict` is `false`, Ogre will automatically create all the missing object paths (Rather like `mkdir -p` does). It will try to deduce the final leaf container type based on the operation being used. For example if using: `ogreData.push( 'new.deeply.nested.leaf')` Ogre knows that `push` is for Arrays, so it'll create the `leaf` container as an Array. By default any elements in between, if missing, will be objects.
+
 ### `get( path, defaultValue )`
 ### `set( path, value )`
+
+### `scopeTo( path)`
+
+Returns a lightweight 'cursor' object that has the same API as an Ogre object, but is bound to the specified `path` as the root. If you subscribe to events on cursors, the callbacks will only be triggered when an element of the graph has changed for this `path`.
 
 ### `merge( path, object )`
 ### `push( path, array )`
@@ -98,8 +104,6 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 
 - Flesh out API docs.
 - More examples.
-- Better test coverage.
-- Add more array method support?
 
 
 ## Building
@@ -119,6 +123,10 @@ Minify browser build:
 Run tests:
 
     npm test
+
+The whole shebang:
+
+    npm run all
 
 
 ## License
