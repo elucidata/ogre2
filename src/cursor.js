@@ -49,7 +49,7 @@ class Cursor {
   }
 
   // Just for internal, testing, usage!
-  static listenerInfo() {
+  static listenerInfo( full=false) {
     var totalSources= _events_for_source.size,
         totalKeyWatches= 0,
         totalEventHandlers= 0
@@ -62,7 +62,15 @@ class Cursor {
       })
     })
 
-    return { totalSources, totalKeyWatches, totalEventHandlers }
+    var report= { totalSources, totalKeyWatches, totalEventHandlers }
+
+    // if( full) {
+    //   var handlers= ( JSON.stringify(_events_for_source))
+    //   report.events_for_source= handlers
+    //   console.dir( handlers)
+    // }
+
+    return report
   }
 
 }
@@ -143,39 +151,37 @@ function handleEventsFor( source) {
   }
 }
 
-function globalEventHandler( source, changedKeys) {
+function globalEventHandler( source, changed_paths) {
   if(! _events_for_source.has( source)) {
     console.log( "Ghost bug: Cursor#globalEventHandler() called with a source no longer tracked!")
     return
   }
 
-  var key_map= _events_for_source.get( source),
-      keys= Object.keys( key_map)
+  var tracked_map= _events_for_source.get( source),
+      tracked_paths= Object.keys( tracked_map),
+      callbacks= []
 
-  if( keys && keys.length) {
-    var i=0, l=changedKeys.length, handlers= [], key,
-        ii=0, ll= keys.length, changedKey
+  if( tracked_paths && tracked_paths.length) {
+    for( var i=0; i< tracked_paths.length; i++) {
+      var track_path= tracked_paths[ i]
 
-    for( ii=0; ii < ll; ii++ ) {
-      key= keys[ ii]
+      for( var j=0; j< changed_paths.length; j++) {
+        var changed_path= changed_paths[ j]
 
-      for (; i < l; i++) {
-        changedKey= changedKeys[ i]
+        if( startsWith( changed_path, track_path)) {
+          var cursor_callbacks= tracked_map[ track_path]
 
-        if( startsWith(changedKey, key)) {
-          var callbacks= key_map[ key]
-
-          handlers= handlers.concat( callbacks)
+          callbacks= callbacks.concat( cursor_callbacks)
           break
         }
       }
     }
+  }
 
-    if( handlers.length) {
-      handlers.forEach(( fn)=>{
-        fn( changedKeys)
-      })
-    }
+  if( callbacks.length) {
+    callbacks.forEach(( fn)=>{
+      fn( changed_paths)
+    })
   }
 }
 

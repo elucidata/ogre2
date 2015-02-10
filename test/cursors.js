@@ -5,6 +5,8 @@ var Ogre= require('../'),
     test= require('tape'),
     _= require( './_helpers')
 
+function testx(){}
+
 test( 'Basic cursor tests', function( t ){
 
   t.notEqual( Ogre, null, "exported value is not null" )
@@ -111,7 +113,7 @@ t.equal( src.get( 'right.child.length'), 3, 'Pathed Array value. Sub-tree correc
 })
 
 test( 'Sub-tree events (extracted from app)', function ( t){
-  t.plan( 12 )
+  t.plan( 14 )
 
   var src= new Ogre({
         peer1: {
@@ -126,7 +128,7 @@ test( 'Sub-tree events (extracted from app)', function ( t){
       _p2_count= 0
 
   function root_onChange( keys){
-    // log('orge.onChange', keys)
+    // console.log('orge.onChange', keys)
     _root_count += 1
     t.ok( keys, 'root onChange')
   }
@@ -135,21 +137,27 @@ test( 'Sub-tree events (extracted from app)', function ( t){
 
 
   var p1= src.scopeTo( 'peer1'),
-      p2= src.scopeTo( 'peer2')
+      p2= src.scopeTo( 'peer2'),
+      p22= src.scopeTo( 'peer2')
 
   function peer1_onChange( keys){
     _p1_count += 1
     t.ok( keys, 'peer1 onChange')
-    // log( 'peer1.onChange', keys)
+    // console.log( 'peer1.onChange', keys)
   }
   p1.onChange( peer1_onChange)
 
   function peer2_onChange( keys){
     _p2_count += 1
     t.ok( keys, 'peer2 onChange')
-    // log( 'peer2.onChange', keys)
+    // console.log( 'peer2.onChange', keys)
   }
   p2.onChange( peer2_onChange)
+
+  // p22.onChange(function(){
+  //   console.log( ">>>>>>>>>>>> Second call")
+  //   console.log( Cursor.listenerInfo( true))
+  // })
 
   src.set( 'peer1.name', 'TEST')
   src.set( 'peer2.name', 'SHIT')
@@ -161,6 +169,10 @@ test( 'Sub-tree events (extracted from app)', function ( t){
   setTimeout(function(){
     src.set('peer1.has.stuff', 'JUNK')
   }, 200)
+
+  setTimeout(function(){
+    src.set('peer2.has.more.stuff', 'JUNK')
+  }, 300)
 
   setTimeout(function(){
     var expected= { totalEventHandlers: 2, totalKeyWatches: 2, totalSources: 1 }
@@ -181,7 +193,41 @@ test( 'Sub-tree events (extracted from app)', function ( t){
 
     expected= { totalEventHandlers: 0, totalKeyWatches: 0, totalSources: 0 }
     t.deepLooseEqual( Cursor.listenerInfo(), expected)
-  }, 300)
+  }, 400)
+
+})
+
+test( 'test cursor change events', function( t){
+  var src= new Ogre({
+        peer1: {
+          name: 'p1'
+        },
+        peer2: {
+          name: 'p2'
+        }
+      }, { strict:false, batchChanges:false}),
+      peer1= src.scopeTo( 'peer1'),
+      peer2= src.scopeTo( 'peer2')
+
+  function changed(target, keys) {
+    t.ok( keys, target+ ' keys changed: '+ keys.join(', '))
+    // console.log('> changed', key)
+  }
+
+  t.plan( 5)
+
+  src.onChange( changed.bind(this, 'root'))
+  peer1.onChange( changed.bind(this, 'peer1'))
+  peer2.onChange( changed.bind(this, 'peer2'))
+
+  // console.log(">> src.set('unrelated', 'value')")
+  src.set('unrelated', 'value') // 1
+
+  // console.log(">> peer1.set('name', 'updated')")
+  peer1.set('name', 'updated') // 2
+
+  // console.log(">> peer2.set('name', 'updated')")
+  peer2.set('name', 'updated') // 2
 
 })
 
