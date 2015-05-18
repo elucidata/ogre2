@@ -261,3 +261,74 @@ test( 'test array key methods', function( t){
       cursor= src.scopeTo( 'child')
   _.test_array_keys( cursor, t)
 })
+
+
+test( 'nested cursor change events', function( t){
+  var src= new Ogre({ }, { strict:false, batchChanges:false }),
+      forms= src.scopeTo( 'forms'),
+      email= forms.scopeTo( 'email'),
+      state= email.scopeTo( 'data'),
+      status= email.scopeTo( 'status')
+
+  t.plan( 5)
+
+  status.onChange(function( keys){
+    t.ok(true, keys +': '+ status.get(), "Status change event fired")
+  })
+
+  status.set('loading')
+  email.set('status', 'ready')
+  forms.set('email.status', 'uno_momento')
+  status.set('done')
+
+  t.deepLooseEqual( src.get(), { forms:{ email:{ status:'done'}}}, "Final data is in correct shape.")
+})
+
+
+test( 'nested cursor change events, batched', function( t){
+  var src= new Ogre({ }, { strict:false, batchChanges:true }),
+      forms= src.scopeTo( 'forms'),
+      email= forms.scopeTo( 'email'),
+      state= email.scopeTo( 'data'),
+      status= email.scopeTo( 'status')
+
+  t.plan( 2)
+
+  status.onChange(function( keys){
+    t.ok(true, keys +': '+ status.get(), "Status change event fired")
+  })
+
+  // status.set('loading')
+  email.set('status', 'ready')
+  forms.set('email.status', 'start')
+  forms.set('email.status', 'middle')
+  forms.set('email.status', 'uno_momento')
+  // status.set('done')
+
+  t.deepLooseEqual( src.get(), { forms:{ email:{ status:'uno_momento'}}}, "Final data is in correct shape.")
+})
+
+
+test( 'nested cursor change events, batched take two', function( t){
+  var src= new Ogre({ }, { strict:false, batchChanges:true }),
+      forms= src.scopeTo( 'forms'),
+      email= forms.scopeTo( 'email'),
+      state= email.scopeTo( 'data'),
+      status= email.scopeTo( 'status')
+
+  t.plan( 2)
+
+  forms.onChange(function( keys){
+    t.ok(true, keys +': '+ status.get(), "Status change event fired")
+  })
+
+  // status.set('loading')
+  email.set('status', 'ready')
+  forms.set('email.status', 'start')
+  forms.set('email.status', 'middle')
+  forms.set('email.status', 'uno_momento')
+  // status.set('done')
+
+  t.deepLooseEqual( src.get(), { forms:{ email:{ status:'uno_momento'}}}, "Final data is in correct shape.")
+})
+

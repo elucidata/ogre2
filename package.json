@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "description": "Object Graph engine",
   "main": "index.js",
   "license": "MIT",
@@ -30,16 +30,17 @@
     ]
   },
   "scripts": {
-    "all": "npm run build && npm run dist && npm run minify && npm run example && npm run test",
+    "all": "npm run build && npm run dist && npm run example && npm run test",
     "build": "jsx --no-cache-dir --harmony src lib",
-    "dist": "NODE_ENV=production browserify src/ogre.js -o dist/ogre.js --standalone Ogre",
+    "dist": "NODE_ENV=production browserify src/ogre.js -o dist/ogre.js --standalone Ogre && npm run minify",
     "example": "NODE_ENV=development browserify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js",
     "watch": "watchify src/ogre.js -o dist/ogre.js --standalone Ogre --debug --verbose",
     "watch-example": "watchify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js",
-    "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js",
+    "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js && npm run gz-size",
     "test": "tape test/*.js | tap-spec",
     "test-browser": "browserify -t reactify test/*.js | testlingify",
     "toc": "mdtoc ReadMe.md ReadMe.md",
+    "gz-size": "gzip -c dist/ogre.min.js | wc -c | pretty-bytes",
     "inc-major": "mversion major",
     "inc-minor": "mversion minor",
     "inc-patch": "mversion patch"
@@ -48,7 +49,8 @@
   "dependencies": {
     "react": "^0.12.0",
     "elucidata-type": "^1.1.1",
-    "es6-collections": "^0.4.1"
+    "es6-collections": "^0.4.1",
+    "eventemitter3": "^1.1.0"
   },
   "devDependencies": {
     "tape": "^3.0.2",

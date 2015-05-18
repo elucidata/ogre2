@@ -4,7 +4,7 @@
 var type= require( 'elucidata-type'),
     update= require( 'react/lib/update'),
     assign= require( 'react/lib/Object.assign'),
-    EventEmitter= require( 'events').EventEmitter,
+    EventEmitter= require( 'eventemitter3'), // require( 'events').EventEmitter, //
     Cursor= require( './cursor'),
     CHANGE_KEY= 'change',
     {keyParts, findPath, buildSpecGraph}= require( './util')
@@ -25,6 +25,7 @@ class Ogre  {
     this._changedKeys= []
     this._timer= null
     this._emitter= new EventEmitter()
+    this._emitter.setMaxListeners( 0 )
     this.history= []
 
     this.options= assign({}, { // Defaults
