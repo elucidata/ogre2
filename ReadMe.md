@@ -16,7 +16,9 @@
 
 ## Overview
 
-Built with React in mind, Ogre is a simple graph manager that leverages React's own [immutability helpers](http://facebook.github.io/react/docs/update.html) to update objects without changing the surrounding topography. Allows for efficient object equality checks.
+Weighing in at ~5kb, gzipped, Ogre is pretty svelte. Built with React in mind, Ogre is a simple graph manager that leverages React's own [immutability helpers](http://facebook.github.io/react/docs/update.html) to update objects without changing the surrounding topography. 
+
+Although they are called "immutability helpers," Ogre is not about immutability. It _is_ about highly efficient object equality checks:
 
 ``` javascript
 shouldComponentUpdate( nextProps, _ ) {
@@ -61,14 +63,14 @@ Since the onChange event is accumulated, by default, you could have multiple sto
 
 If `strict` is `false`, Ogre will automatically create all the missing object paths (Rather like `mkdir -p` does). It will try to deduce the final leaf container type based on the operation being used. For example if using: `ogreData.push( 'new.deeply.nested.leaf')` Ogre knows that `push` is for Arrays, so it'll create the `leaf` container as an Array. By default any elements in between, if missing, will be objects.
 
-### `get( path, defaultValue )`
-### `set( path, value )`
+### `get( path:string, defaultValue:any ):any`
+### `set( path:string, value:any ):Ogre`
 
-### `scopeTo( path)`
+### `scopeTo( path:string ):Ogre`
 
 Returns a lightweight 'cursor' object that has the same API as an Ogre object, but is bound to the specified `path` as the root. If you subscribe to events on cursors, the callbacks will only be triggered when an element of the graph has changed for this `path`.
 
-### `getPrevious( path, step=0)`
+### `getPrevious( path:string, step=0 ):any`
 
 Returns data from history. Step 0 is the previous version. If you set the `maxHistory` to a higher amount than the default of 1, you can get values up to that many steps back.
 
