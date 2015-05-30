@@ -1,5 +1,4 @@
 import type from 'elucidata-type'
-// var type= require( 'elucidata-type')
 
 export function findPath( path, source, create, containerType ) {
   path= path || ''
@@ -10,7 +9,7 @@ export function findPath( path, source, create, containerType ) {
     return source
   }
 
-  var parts= keyParts( path ),
+  let parts= keyParts( path ),
       obj= source, key;
 
   while( obj && parts.length ) {
@@ -36,11 +35,11 @@ export function buildSpecGraph( path, spec ) {
   path= path || ''
   spec= spec || {}
 
-  var graph= {}
+  let graph= {}
   if( path === '') return graph
 
 
-  var parts= keyParts( path ),
+  let parts= keyParts( path ),
       obj= graph, key;
 
   while( parts.length ) {
@@ -60,7 +59,7 @@ export function buildSpecGraph( path, spec ) {
 }
 
 export function keyParts( path ) {
-  var arr;
+  let arr;
 
   if( type.isArray( path)) {
     return path.concat()
@@ -75,7 +74,7 @@ export function keyParts( path ) {
   }
 }
 
-var keyCache= {
+let keyCache= {
   '': ['']
 }
 
@@ -85,10 +84,10 @@ keyParts.clearCache= function() {
   }
 }
 
-var _last_id = 0
+let _last_id = 0
 
 export function uid ( radix){
-  var now = Math.floor( (new Date()).getTime() / 1000 )
+  let now = Math.floor( (new Date()).getTime() / 1000 )
   radix= radix || 36
 
   while ( now <= _last_id ) {
@@ -101,7 +100,7 @@ export function uid ( radix){
 }
 
 /* global performance */
-export var now= (()=>{
+export let now= (()=>{
   if( typeof performance === 'object' && performance.now ) {
     return performance.now.bind( performance )
   }
@@ -118,15 +117,5 @@ export var now= (()=>{
 export function startsWith( haystack, needle) {
   // position = position || 0;
   // return haystack.lastIndexOf(needle, position) === position;
-  return haystack.indexOf( needle) == 0
+  return haystack.indexOf( needle ) == 0
 }
-
-
-// module.exports= {
-//   keyParts,
-//   findPath,
-//   buildSpecGraph,
-//   uid,
-//   now,
-//   startsWith
-// }
