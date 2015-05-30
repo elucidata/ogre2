@@ -12,23 +12,6 @@
     "type": "git",
     "url": "git://github.com/elucidata/ogre2.git"
   },
-  "browserify_NOPE": {
-    "transform": [
-      [
-        "reactify",
-        {
-          "es6": true,
-          "everything": true
-        }
-      ],
-      [
-        "envify",
-        {
-          "NODE_ENV": "production"
-        }
-      ]
-    ]
-  },
   "scripts": {
     "all": "npm run build && npm run dist && npm run example && npm run test",
     "build": "babel src/ -d lib/ --stage 0 --loose",
