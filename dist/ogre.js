@@ -1,4 +1,651 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Ogre=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
+module.exports= require('./lib/ogre')
+
+},{"./lib/ogre":3}],2:[function(require,module,exports){
+'use strict';
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+require('es6-collections');
+
+var _elucidataType = require('elucidata-type');
+
+var _elucidataType2 = _interopRequireDefault(_elucidataType);
+
+var _util = require('./util');
+
+var Cursor = (function () {
+  function Cursor(source, basePath) {
+    _classCallCheck(this, Cursor);
+
+    this.source = source;
+    this.basePath = _elucidataType2['default'].isArray(basePath) ? basePath.join('.') : basePath;
+  }
+
+  Cursor.prototype.scopeTo = function scopeTo(path) {
+    return Cursor.forPath(this.basePath + '.' + path, this.source);
+  };
+
+  Cursor.prototype.onChange = function onChange(handler) {
+    var _this = this;
+
+    onSourceChange(this.source, this.basePath, handler);
+
+    return function () {
+      offSourceChange(_this.source, _this.basePath, handler);
+    };
+  };
+
+  Cursor.prototype.offChange = function offChange(handler) {
+    offSourceChange(this.source, this.basePath, handler);
+
+    return this;
+  };
+
+  Cursor.prototype.getFullPath = function getFullPath(path) {
+    var subPath = this.basePath;
+
+    if (path) {
+      if (_elucidataType2['default'].isArray(path)) {
+        if (path.length > 0) {
+          subPath += '.';
+          subPath += path.join('.');
+        }
+      } else {
+        subPath += '.';
+        subPath += path;
+      }
+    }
+
+    return subPath;
+  };
+
+  Cursor.forPath = function forPath(path, source) {
+    return new Cursor(source, path);
+  };
+
+  // Just for internal, testing, usage!
+
+  Cursor.listenerInfo = function listenerInfo() {
+    var full = arguments[0] === undefined ? false : arguments[0];
+
+    var totalSources = _eventsForSource.size,
+        totalKeyWatches = 0,
+        totalEventHandlers = 0;
+
+    _eventsForSource.forEach(function (keyMap, source) {
+      Object.keys(keyMap).forEach(function (key) {
+        var handlers = keyMap[key];
+        totalKeyWatches += 1;
+        totalEventHandlers += handlers.length;
+      });
+    });
+
+    var report = { totalSources: totalSources, totalKeyWatches: totalKeyWatches, totalEventHandlers: totalEventHandlers };
+
+    // if( full) {
+    //   let handlers= ( JSON.stringify(_eventsForSource))
+    //   report.events_for_source= handlers
+    //   console.dir( handlers)
+    // }
+
+    return report;
+  };
+
+  return Cursor;
+})();
+
+[// Build pass-thru methods...
+'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice', 'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined', 'isNotUndefined', 'isDefined', 'isNull', 'isNotNull', 'isEmpty', 'isNotEmpty', 'isString', 'isNotString', 'isArray', 'isNotArray', 'isObject', 'isNotObject', 'isNumber', 'isNotNumber'].map(function (method) {
+
+  Cursor.prototype[method] = function () {
+    for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+      args[_key] = arguments[_key];
+    }
+
+    var argsLen = args.length,
+        path = undefined,
+        params = undefined;
+    if (argsLen === 0) {
+      return this.source[method].call(this.source, this.basePath);
+    } else if (argsLen === 1) {
+      path = args[0];
+      if (_assumedValueMethods.has(method)) {
+        return this.source[method].call(this.source, this.basePath, path);
+      } else {
+        return this.source[method].call(this.source, this.getFullPath(path));
+      }
+    } else {
+      path = args[0];
+      params = args.slice(1);
+
+      params.unshift(this.getFullPath(path));
+      return this.source[method].apply(this.source, params);
+    }
+  };
+});
+
+var _eventsForSource = new Map(),
+    _sourceHandlers = new WeakMap(),
+    _assumedValueMethods = new Set(['set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each', 'forEach', 'reduce', 'filter', 'find']);
+
+function onSourceChange(source, key, handler) {
+  handleEventsFor(source);
+
+  var keyMap = _eventsForSource.get(source);
+
+  keyMap[key] = keyMap[key] || [];
+  keyMap[key].push(handler);
+}
+
+function offSourceChange(source, key, handler) {
+  var keyMap = _eventsForSource.get(source);
+
+  keyMap[key] = keyMap[key] || [];
+  keyMap[key].splice(keyMap[key].indexOf(handler), 1);
+
+  if (keyMap[key].length === 0) {
+    delete keyMap[key];
+
+    if (Object.keys(keyMap).length === 0) {
+      var srcHandler = _sourceHandlers.get(source);
+
+      source.offChange(srcHandler);
+      _sourceHandlers['delete'](source);
+      _eventsForSource['delete'](source);
+    }
+  }
+}
+
+function handleEventsFor(source) {
+  if (!_eventsForSource.has(source)) {
+    var handler = globalEventHandler.bind(this, source);
+
+    source.onChange(handler);
+    _eventsForSource.set(source, {});
+    _sourceHandlers.set(source, handler);
+  }
+}
+
+function globalEventHandler(source, changedPaths) {
+  if (!_eventsForSource.has(source)) {
+    console.log('Ghost bug: Cursor#globalEventHandler() called with a source no longer tracked!');
+    return;
+  }
+
+  var trackedMap = _eventsForSource.get(source),
+      trackedPaths = Object.keys(trackedMap),
+      callbacks = [];
+
+  if (trackedPaths && trackedPaths.length) {
+    for (var i = 0; i < trackedPaths.length; i++) {
+      var trackPath = trackedPaths[i];
+
+      for (var j = 0; j < changedPaths.length; j++) {
+        var changedPath = changedPaths[j];
+
+        if ((0, _util.startsWith)(changedPath, trackPath)) {
+          var cursor_callbacks = trackedMap[trackPath];
+
+          callbacks = callbacks.concat(cursor_callbacks);
+          break;
+        }
+      }
+    }
+  }
+
+  if (callbacks.length) {
+    callbacks.forEach(function (fn) {
+      fn(changedPaths);
+    });
+  }
+}
+
+module.exports = Cursor;
+},{"./util":4,"elucidata-type":6,"es6-collections":7}],3:[function(require,module,exports){
+/**
+ * Ogre 2
+ */
+'use strict';
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
+
+var _elucidataType = require('elucidata-type');
+
+var _elucidataType2 = _interopRequireDefault(_elucidataType);
+
+var _reactLibUpdate = require('react/lib/update');
+
+var _reactLibUpdate2 = _interopRequireDefault(_reactLibUpdate);
+
+var _reactLibObjectAssign = require('react/lib/Object.assign');
+
+var _reactLibObjectAssign2 = _interopRequireDefault(_reactLibObjectAssign);
+
+var _eventemitter3 = require('eventemitter3');
+
+var _eventemitter32 = _interopRequireDefault(_eventemitter3);
+
+var _cursor = require('./cursor');
+
+var _cursor2 = _interopRequireDefault(_cursor);
+
+var _util = require('./util');
+
+var _version = require('./version');
+
+var _version2 = _interopRequireDefault(_version);
+
+var CHANGE_KEY = 'change',
+    OGRE_DEFAULTS = {
+  batchChanges: true,
+  maxHistory: 1,
+  strict: true
+};
+
+var Ogre = (function () {
+  function Ogre() {
+    var initialState = arguments[0] === undefined ? {} : arguments[0];
+    var options = arguments[1] === undefined ? {} : arguments[1];
+
+    _classCallCheck(this, Ogre);
+
+    if (!this instanceof Ogre) {
+      return new Ogre(initialState, options);
+    }
+
+    this._root = initialState;
+    this._changedKeys = [];
+    this._timer = null;
+    this._emitter = new _eventemitter32['default']();
+    this.history = [];
+
+    this.options = (0, _reactLibObjectAssign2['default'])({}, OGRE_DEFAULTS, options);
+
+    // If it's a subclass that implements getInitialState()...
+    if ('getInitialState' in this) {
+      this._root = this.getInitialState(this._root);
+    }
+  }
+
+  Ogre.prototype.scopeTo = function scopeTo(path) {
+    return _cursor2['default'].forPath(path, this);
+  };
+
+  // Querying
+
+  Ogre.prototype.get = function get(path, defaultValue) {
+    if (path === '' || path == null) return this._root; // jshint ignore:line
+
+    var value = (0, _util.findPath)(path, this._root);
+
+    if (_elucidataType2['default'].isUndefined(value)) return defaultValue;else return value;
+  };
+
+  Ogre.prototype.getPrevious = function getPrevious(path) {
+    var step = arguments[1] === undefined ? 0 : arguments[1];
+
+    return (0, _util.findPath)(path, this.history[step] || {});
+  };
+
+  Ogre.prototype.map = function map(path, fn) {
+    return this.get(path, []).map(fn);
+  };
+
+  // TODO: Each returns this???
+
+  Ogre.prototype.each = function each(path, fn) {
+    this.get(path, []).forEach(fn);
+    return this;
+  };
+
+  Ogre.prototype.forEach = function forEach(path, fn) {
+    return this.each(path, fn);
+  };
+
+  Ogre.prototype.filter = function filter(path, fn) {
+    return this.get(path, []).filter(fn);
+  };
+
+  Ogre.prototype.reduce = function reduce(path, fn, initialValue) {
+    return this.get(path, []).reduce(fn, initialValue);
+  };
+
+  Ogre.prototype.find = function find(path, fn) {
+    var items = this.get(path, []),
+        i = undefined,
+        l = undefined;
+    for (i = 0, l = items.length; i < l; i++) {
+      var item = items[i];
+      if (fn(item) === true) {
+        return item;
+      }
+    }
+    return void 0;
+  };
+
+  Ogre.prototype.indexOf = function indexOf(path, test) {
+    return this.get(path).indexOf(test);
+  };
+
+  // Mutations
+
+  Ogre.prototype.set = function set(path, value) {
+    argCheck(arguments, 'set');
+    this._changeDataset(path, { $set: value }, 'object');
+    return this;
+  };
+
+  Ogre.prototype.merge = function merge(path, object) {
+    this._changeDataset(path, { $merge: object }, 'object');
+    return this;
+  };
+
+  Ogre.prototype.push = function push(path, array) {
+    if (_elucidataType2['default'].isNotArray(array)) array = [array];
+    this._changeDataset(path, { $push: array }, 'array');
+    return this;
+  };
+
+  Ogre.prototype.unshift = function unshift(path, array) {
+    if (_elucidataType2['default'].isNotArray(array)) array = [array];
+    this._changeDataset(path, { $unshift: array }, 'array');
+    return this;
+  };
+
+  Ogre.prototype.splice = function splice(path, start, howMany) {
+    for (var _len = arguments.length, items = Array(_len > 3 ? _len - 3 : 0), _key = 3; _key < _len; _key++) {
+      items[_key - 3] = arguments[_key];
+    }
+
+    var spec = undefined;
+    if (arguments.length === 2) {
+      spec = { $splice: start };
+    } else {
+      spec = { $splice: [[start, howMany].concat(items)] };
+    }
+    this._changeDataset(path, spec, 'array');
+    return this;
+  };
+
+  // Observing
+
+  Ogre.prototype.onChange = function onChange(fn) {
+    var _this = this;
+
+    this._emitter.on(CHANGE_KEY, fn);
+    return function () {
+      _this._emitter.removeListener(CHANGE_KEY, fn);
+    };
+  };
+
+  Ogre.prototype.offChange = function offChange(fn) {
+    this._emitter.removeListener(CHANGE_KEY, fn);
+    return this;
+  };
+
+  // Type checking
+
+  Ogre.prototype.has = function has(path) {
+    return this.isNotEmpty(path);
+  };
+
+  Ogre.prototype.isUndefined = function isUndefined(path) {
+    return _elucidataType2['default'].isUndefined(this.get(path));
+  };
+
+  Ogre.prototype.isNotUndefined = function isNotUndefined(path) {
+    return _elucidataType2['default'].isNotUndefined(this.get(path));
+  };
+
+  Ogre.prototype.isDefined = function isDefined(path) {
+    return _elucidataType2['default'].isNotUndefined(this.get(path));
+  };
+
+  Ogre.prototype.isNull = function isNull(path) {
+    return _elucidataType2['default'].isNull(this.get(path));
+  };
+
+  Ogre.prototype.isNotNull = function isNotNull(path) {
+    return _elucidataType2['default'].isNotNull(this.get(path));
+  };
+
+  Ogre.prototype.isEmpty = function isEmpty(path) {
+    return _elucidataType2['default'].isEmpty(this.get(path));
+  };
+
+  Ogre.prototype.isNotEmpty = function isNotEmpty(path) {
+    return _elucidataType2['default'].isNotEmpty(this.get(path));
+  };
+
+  Ogre.prototype.isString = function isString(path) {
+    return _elucidataType2['default'].isString(this.get(path));
+  };
+
+  Ogre.prototype.isNotString = function isNotString(path) {
+    return _elucidataType2['default'].isNotString(this.get(path));
+  };
+
+  Ogre.prototype.isArray = function isArray(path) {
+    return _elucidataType2['default'].isArray(this.get(path));
+  };
+
+  Ogre.prototype.isNotArray = function isNotArray(path) {
+    return _elucidataType2['default'].isNotArray(this.get(path));
+  };
+
+  Ogre.prototype.isObject = function isObject(path) {
+    return _elucidataType2['default'].isObject(this.get(path));
+  };
+
+  Ogre.prototype.isNotObject = function isNotObject(path) {
+    return _elucidataType2['default'].isNotObject(this.get(path));
+  };
+
+  Ogre.prototype.isNumber = function isNumber(path) {
+    return _elucidataType2['default'].isNumber(this.get(path));
+  };
+
+  Ogre.prototype.isNotNumber = function isNotNumber(path) {
+    return _elucidataType2['default'].isNotNumber(this.get(path));
+  };
+
+  Ogre.prototype._changeDataset = function _changeDataset(path, spec, containerType) {
+    if (this._changedKeys.length === 0) {
+      this.history.unshift(this._root);
+      while (this.options.maxHistory >= 0 && this.history.length > this.options.maxHistory) {
+        this.history.pop();
+      }
+    }
+    if (this.options.strict === false) {
+      (0, _util.findPath)(path, this._root, true, containerType);
+    }
+
+    this._root = (0, _reactLibUpdate2['default'])(this._root, (0, _util.buildSpecGraph)(path, spec));
+    this._scheduleChangeEvent(path);
+  };
+
+  Ogre.prototype._scheduleChangeEvent = function _scheduleChangeEvent(key) {
+    if (_elucidataType2['default'].isArray(key)) key = key.join('.');
+    this._changedKeys.push(key);
+    if (this.options.batchChanges === true) {
+      if (this._timer === null) {
+        this._timer = setTimeout(this._sendChangeEvents.bind(this), 0);
+      }
+    } else {
+      this._sendChangeEvents();
+    }
+  };
+
+  Ogre.prototype._sendChangeEvents = function _sendChangeEvents() {
+    this._emitter.emit(CHANGE_KEY, this._changedKeys);
+    this._changedKeys = [];
+    this._timer = null;
+  };
+
+  Ogre.prototype._clearKeyCache = function _clearKeyCache() {
+    _util.keyParts.clearCache();
+  };
+
+  return Ogre;
+})();
+
+Ogre.version = _version2['default'];
+
+// Helpers
+
+function argCheck(args) {
+  var target = arguments[1] === undefined ? '' : arguments[1];
+
+  if (args.length < 2) {
+    throw new Error('Invalid ' + target + ' call: Requires path and value');
+  }
+}
+
+module.exports = Ogre;
+},{"./cursor":2,"./util":4,"./version":5,"elucidata-type":6,"eventemitter3":8,"react/lib/Object.assign":9,"react/lib/update":12}],4:[function(require,module,exports){
+'use strict';
+
+exports.__esModule = true;
+exports.findPath = findPath;
+exports.buildSpecGraph = buildSpecGraph;
+exports.keyParts = keyParts;
+exports.uid = uid;
+exports.startsWith = startsWith;
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
+
+var _elucidataType = require('elucidata-type');
+
+var _elucidataType2 = _interopRequireDefault(_elucidataType);
+
+function findPath(path, source, create, containerType) {
+  path = path || '';
+  source = source || {};
+  create = create === true ? true : false;
+
+  if (path === '') {
+    return source;
+  }
+
+  var parts = keyParts(path),
+      obj = source,
+      key = undefined;
+
+  while (obj && parts.length) {
+    key = parts.shift();
+
+    if (create && _elucidataType2['default'].isUndefined(obj[key])) {
+
+      if (parts.length === 0 && containerType === 'array') {
+        obj[key] = [];
+      } else {
+        obj[key] = {};
+      }
+    }
+
+    obj = obj[key];
+  }
+
+  return obj;
+}
+
+function buildSpecGraph(path, spec) {
+  path = path || '';
+  spec = spec || {};
+
+  var graph = {};
+  if (path === '') return graph;
+
+  var parts = keyParts(path),
+      obj = graph,
+      key = undefined;
+
+  while (parts.length) {
+    key = parts.shift();
+
+    if (parts.length === 0) {
+      obj[key] = spec;
+    } else {
+      obj[key] = {};
+    }
+
+    obj = obj[key];
+  }
+
+  return graph;
+}
+
+function keyParts(path) {
+  var arr = undefined;
+
+  if (_elucidataType2['default'].isArray(path)) {
+    return path.concat();
+  }
+
+  if (arr = keyCache[path]) {
+    // jshint ignore:line
+    return arr.concat();
+  } else {
+    arr = keyCache[path] = path.split('.');
+    return arr.concat();
+  }
+}
+
+var keyCache = {
+  '': ['']
+};
+
+keyParts.clearCache = function () {
+  keyCache = {
+    '': ['']
+  };
+};
+
+var _last_id = 0;
+
+function uid(radix) {
+  var now = Math.floor(new Date().getTime() / 1000);
+  radix = radix || 36;
+
+  while (now <= _last_id) {
+    now += 1;
+  }
+
+  _last_id = now;
+
+  return now.toString(radix);
+}
+
+/* global performance */
+var now = (function () {
+  if (typeof performance === 'object' && performance.now) {
+    return performance.now.bind(performance);
+  } else if (Date.now) {
+    return Date.now.bind(Date);
+  } else {
+    return function () {
+      return new Date().getTime();
+    };
+  }
+})();
+
+exports.now = now;
+
+function startsWith(haystack, needle) {
+  // position = position || 0;
+  // return haystack.lastIndexOf(needle, position) === position;
+  return haystack.indexOf(needle) == 0;
+}
+},{"elucidata-type":6}],5:[function(require,module,exports){
+"use strict";
+
+module.exports = "0.4.0";
+},{}],6:[function(require,module,exports){
 (function() {
   var name, type, _elementTestRe, _fn, _i, _keys, _len, _ref, _typeList;
 
@@ -95,7 +742,7 @@
 
 }).call(this);
 
-},{}],2:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 (function (global){
 (function (exports) {'use strict';
   //shared pointer
@@ -297,7 +944,7 @@
 })(typeof exports != 'undefined' && typeof global != 'undefined' ? global : window );
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],3:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 'use strict';
 
 //
@@ -559,7 +1206,7 @@ EventEmitter.prefixed = prefix;
 //
 module.exports = EventEmitter;
 
-},{}],4:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  * Copyright 2014, Facebook, Inc.
  * All rights reserved.
@@ -606,7 +1253,7 @@ function assign(target, sources) {
 
 module.exports = assign;
 
-},{}],5:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -661,7 +1308,7 @@ var invariant = function(condition, format, a, b, c, d, e, f) {
 
 module.exports = invariant;
 
-},{}],6:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -697,7 +1344,7 @@ var keyOf = function(oneKeyObj) {
 
 module.exports = keyOf;
 
-},{}],7:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /**
  * Copyright 2013-2014, Facebook, Inc.
  * All rights reserved.
@@ -863,560 +1510,5 @@ function update(value, spec) {
 
 module.exports = update;
 
-},{"./Object.assign":4,"./invariant":5,"./keyOf":6}],8:[function(require,module,exports){
-var type= require( 'elucidata-type'),
-    shim= require( 'es6-collections'),
-    $__0= require( './util'),startsWith=$__0.startsWith
-
-
-
-  function Cursor(source, basePath) {"use strict";
-    this.source= source
-    this.basePath= type.isArray( basePath) ? basePath.join( '.') : basePath
-  }
-
-  Cursor.prototype.scopeTo=function(path) {"use strict";
-    return Cursor.forPath( this.basePath +'.'+ path, this.source)
-  };
-
-  Cursor.prototype.onChange=function(handler) {"use strict";
-    onSourceChange( this.source, this.basePath, handler)
-
-    return function()  {
-      offSourceChange( this.source, this.basePath, handler)
-    }.bind(this)
-  };
-
-  Cursor.prototype.offChange=function(handler) {"use strict";
-    offSourceChange( this.source, this.basePath, handler)
-
-    return this
-  };
-
-  Cursor.prototype.getFullPath=function(path) {"use strict";
-      var sub_path= this.basePath
-
-      if( path) {
-        if( type.isArray( path)) {
-          if( path.length > 0) {
-            sub_path += '.'
-            sub_path += path.join( '.')
-          }
-        }
-        else {
-          sub_path += '.'
-          sub_path += path
-        }
-      }
-
-      return sub_path
-  };
-
-  Cursor.forPath=function(path, source) {"use strict";
-    return new Cursor( source, path)
-  };
-
-  // Just for internal, testing, usage!
-  Cursor.listenerInfo=function(full) {"use strict";
-    var totalSources= _events_for_source.size,
-        totalKeyWatches= 0,
-        totalEventHandlers= 0
-
-    _events_for_source.forEach(function( key_map, source){
-      Object.keys( key_map).forEach(function( key){
-        var handlers= key_map[ key]
-        totalKeyWatches += 1
-        totalEventHandlers += handlers.length
-      })
-    })
-
-    var report= { totalSources:totalSources, totalKeyWatches:totalKeyWatches, totalEventHandlers:totalEventHandlers }
-
-    // if( full) {
-    //   var handlers= ( JSON.stringify(_events_for_source))
-    //   report.events_for_source= handlers
-    //   console.dir( handlers)
-    // }
-
-    return report
-  };
-
-
-
-
-[ // Build pass-thru methods...
-  'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice',
-  'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined',
-  'isNotUndefined', 'isDefined', 'isNull', 'isNotNull', 'isEmpty', 'isNotEmpty',
-  'isString', 'isNotString', 'isArray', 'isNotArray', 'isObject', 'isNotObject',
-  'isNumber', 'isNotNumber'
-].map(function( method){
-  Cursor.prototype[ method]= function(){
-    var arg_len= arguments.length, path, params
-    if( arg_len === 0) {
-      return this.source[ method].call( this.source, this.basePath)
-    }
-    else if( arg_len === 1) {
-      path= arguments[ 0]
-      if( _assumed_value_methods.has( method)) {
-        return this.source[ method].call( this.source, this.basePath, path)
-      }
-      else {
-        return this.source[ method].call( this.source, this.getFullPath( path))
-      }
-    }
-    else {
-      var $__0=  arguments,path=$__0[0],params=Array.prototype.slice.call($__0,1);
-      params.unshift( this.getFullPath( path))
-      return this.source[ method].apply( this.source, params)
-    }
-  }
-}.bind(this))
-
-var _events_for_source= new Map(),
-    _source_handlers= new WeakMap(),
-    _assumed_value_methods= new Set([
-      'set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each',
-      'forEach', 'reduce', 'filter', 'find'
-    ])
-
-
-function onSourceChange( source, key, handler) {
-  handleEventsFor( source)
-
-  var key_map= _events_for_source.get( source)
-
-  key_map[ key]= key_map[ key] || []
-  key_map[ key].push( handler)
-}
-
-function offSourceChange( source, key, handler) {
-  var key_map= _events_for_source.get( source)
-
-  key_map[ key]= key_map[ key] || []
-  key_map[ key].splice(  key_map[ key].indexOf( handler), 1)
-
-  if( key_map[ key].length === 0 ) {
-    delete key_map[ key]
-
-    if( Object.keys( key_map).length === 0) {
-      var src_handler= _source_handlers.get( source)
-
-      source.offChange( src_handler)
-      _source_handlers.delete( source)
-      _events_for_source.delete( source)
-    }
-  }
-}
-
-function handleEventsFor( source) {
-  if(! _events_for_source.has( source)) {
-    var handler= globalEventHandler.bind( this, source)
-
-    source.onChange( handler)
-    _events_for_source.set( source, { })
-    _source_handlers.set( source, handler)
-  }
-}
-
-function globalEventHandler( source, changed_paths) {
-  if(! _events_for_source.has( source)) {
-    console.log( "Ghost bug: Cursor#globalEventHandler() called with a source no longer tracked!")
-    return
-  }
-
-  var tracked_map= _events_for_source.get( source),
-      tracked_paths= Object.keys( tracked_map),
-      callbacks= []
-
-  if( tracked_paths && tracked_paths.length) {
-    for( var i=0; i< tracked_paths.length; i++) {
-      var track_path= tracked_paths[ i]
-
-      for( var j=0; j< changed_paths.length; j++) {
-        var changed_path= changed_paths[ j]
-
-        if( startsWith( changed_path, track_path)) {
-          var cursor_callbacks= tracked_map[ track_path]
-
-          callbacks= callbacks.concat( cursor_callbacks)
-          break
-        }
-      }
-    }
-  }
-
-  if( callbacks.length) {
-    callbacks.forEach(function( fn){
-      fn( changed_paths)
-    })
-  }
-}
-
-module.exports= Cursor
-
-},{"./util":10,"elucidata-type":1,"es6-collections":2}],9:[function(require,module,exports){
-/**
- * Ogre 2
- */
-var type= require( 'elucidata-type'),
-    update= require( 'react/lib/update'),
-    assign= require( 'react/lib/Object.assign'),
-    EventEmitter= require( 'eventemitter3'), // require( 'events').EventEmitter, //
-    Cursor= require( './cursor'),
-    CHANGE_KEY= 'change',
-    $__0=   require( './util'),keyParts=$__0.keyParts,findPath=$__0.findPath,buildSpecGraph=$__0.buildSpecGraph,
-    version= require( './version')
-
-    // keyParts= util.keyParts,
-    // findPath= util.findPath,
-    // buildSpecGraph= util.buildSpecGraph
-
-
-
-
-  function Ogre(initialState, options)  {"use strict";
-    if(! this instanceof Ogre) {
-      return new Ogre( initialState, options )
-    }
-
-    this.$Ogre_root= initialState || {}
-    this.$Ogre_changedKeys= []
-    this.$Ogre_timer= null
-    this.$Ogre_emitter= new EventEmitter()
-    this.$Ogre_emitter.setMaxListeners( 0 )
-    this.history= []
-
-    this.options= assign({}, { // Defaults
-      batchChanges: true,
-      maxHistory: 1,
-      strict: true
-    }, options || {})
-
-    // If it's a subclass that implements getInitialState()...
-    if( this.getInitialState ) {
-      this.$Ogre_root= this.getInitialState( this.$Ogre_root )
-    }
-  }
-
-  Ogre.prototype.scopeTo=function(path) {"use strict";
-    return Cursor.forPath( path, this)
-  };
-
-  // Querying
-
-  Ogre.prototype.get=function(path, defaultValue)  {"use strict";
-    if( path === '' || path == null ) return this.$Ogre_root // jshint ignore:line
-
-    var value= findPath( path, this.$Ogre_root)
-
-    if( type.isUndefined( value))
-      return defaultValue
-    else
-      return value
-  };
-
-  Ogre.prototype.getPrevious=function(path, step)  {"use strict";
-    step= step || 0
-    return findPath( path, this.history[ step] || {} )
-  };
-
-  Ogre.prototype.map=function(path, fn)  {"use strict";
-    return this.get( path, [] ).map( fn )
-  };
-
-  // TODO: Each returns this???
-  Ogre.prototype.each=function(path, fn)  {"use strict";
-    this.get( path, [] ).forEach( fn )
-    return this
-  };
-
-  Ogre.prototype.forEach=function(path, fn)  {"use strict";
-    return this.each( path, fn)
-  };
-
-  Ogre.prototype.filter=function(path, fn)  {"use strict";
-    return this.get( path, [] ).filter( fn )
-  };
-
-  Ogre.prototype.reduce=function(path, fn, initialValue)  {"use strict";
-    return this.get( path, [] ).reduce( fn, initialValue )
-  };
-
-  Ogre.prototype.find=function(path, fn)  {"use strict";
-    var items= this.get( path, [] ), i, l;
-    for (i= 0, l= items.length; i < l; i++) {
-      var item= items[i]
-      if( fn( item ) === true ) {
-        return item
-      }
-    }
-    return void 0
-  };
-
-  Ogre.prototype.indexOf=function(path, test)  {"use strict";
-    return this.get( path ).indexOf( test )
-  };
-
-  // Mutations
-
-  Ogre.prototype.set=function(path, value) {"use strict";
-    if( arguments.length < 2) {
-      throw new Error("Invalid set() call: Requires path and value.")
-    }
-    this.$Ogre_changeDataset( path, { $set:value }, 'object')
-    return this
-  };
-
-  Ogre.prototype.merge=function(path, object)  {"use strict";
-    this.$Ogre_changeDataset( path, { $merge:object }, 'object')
-    return this
-  };
-
-  Ogre.prototype.push=function(path, array)  {"use strict";
-    if( type.isNotArray( array )) array= [ array ]
-    this.$Ogre_changeDataset( path, { $push:array }, 'array')
-    return this
-  };
-
-  Ogre.prototype.unshift=function(path, array)  {"use strict";
-    if( type.isNotArray( array )) array= [ array ]
-    this.$Ogre_changeDataset( path, { $unshift:array }, 'array')
-    return this
-  };
-
-  Ogre.prototype.splice=function(path, start, howMany)  {"use strict";var items=Array.prototype.slice.call(arguments,3);
-    var spec
-    if( arguments.length === 2 ) {
-      spec= { $splice:start }
-    }
-    else {
-      spec= { $splice:[ [start, howMany].concat( items ) ]}
-    }
-    this.$Ogre_changeDataset( path, spec, 'array' )
-    return this
-  };
-
-  // Observing
-
-  Ogre.prototype.onChange=function(fn)  {"use strict";
-    this.$Ogre_emitter.on( CHANGE_KEY, fn )
-    return function()  {
-      this.$Ogre_emitter.removeListener( CHANGE_KEY, fn )
-    }.bind(this)
-  };
-
-  Ogre.prototype.offChange=function(fn)  {"use strict";
-    this.$Ogre_emitter.removeListener( CHANGE_KEY, fn )
-    return this
-  };
-
-
-  // Type checking
-
-  Ogre.prototype.has=function(path) {"use strict";
-    return this.isNotEmpty( path)
-  };
-
-  Ogre.prototype.isUndefined=function(path)  {"use strict"; return type.isUndefined( this.get( path )) };
-  Ogre.prototype.isNotUndefined=function(path)  {"use strict"; return type.isNotUndefined( this.get( path )) };
-  Ogre.prototype.isDefined=function(path)  {"use strict"; return type.isNotUndefined( this.get( path )) };
-  Ogre.prototype.isNull=function(path)  {"use strict"; return type.isNull( this.get( path )) };
-  Ogre.prototype.isNotNull=function(path)  {"use strict"; return type.isNotNull( this.get( path )) };
-  Ogre.prototype.isEmpty=function(path)  {"use strict"; return type.isEmpty( this.get( path )) };
-  Ogre.prototype.isNotEmpty=function(path)  {"use strict"; return type.isNotEmpty( this.get( path )) };
-
-  Ogre.prototype.isString=function(path)  {"use strict"; return type.isString( this.get( path )) };
-  Ogre.prototype.isNotString=function(path)  {"use strict"; return type.isNotString( this.get( path )) };
-  Ogre.prototype.isArray=function(path)  {"use strict"; return type.isArray( this.get( path )) };
-  Ogre.prototype.isNotArray=function(path)  {"use strict"; return type.isNotArray( this.get( path )) };
-  Ogre.prototype.isObject=function(path)  {"use strict"; return type.isObject( this.get( path )) };
-  Ogre.prototype.isNotObject=function(path)  {"use strict"; return type.isNotObject( this.get( path )) };
-  Ogre.prototype.isNumber=function(path)  {"use strict"; return type.isNumber( this.get( path )) };
-  Ogre.prototype.isNotNumber=function(path)  {"use strict"; return type.isNotNumber( this.get( path )) };
-
-
-
-  Ogre.prototype.$Ogre_changeDataset=function(path, spec, containerType)  {"use strict";
-    if( this.$Ogre_changedKeys.length === 0 ) {
-      this.history.unshift( this.$Ogre_root )
-      while( this.options.maxHistory >= 0 && this.history.length > this.options.maxHistory ) {
-        this.history.pop()
-      }
-    }
-    if( this.options.strict === false ) {
-      findPath( path, this.$Ogre_root, true, containerType )
-    }
-
-    this.$Ogre_root= update( this.$Ogre_root, buildSpecGraph( path, spec))
-    this.$Ogre_scheduleChangeEvent( path )
-  };
-
-  Ogre.prototype.$Ogre_scheduleChangeEvent=function(key)  {"use strict";
-    if( type.isArray( key)) key= key.join('.')
-    this.$Ogre_changedKeys.push( key )
-    if( this.options.batchChanges === true ) {
-      if( this.$Ogre_timer === null ) {
-        this.$Ogre_timer= setTimeout( this.$Ogre_sendChangeEvents.bind(this), 0)
-      }
-    }
-    else {
-      this.$Ogre_sendChangeEvents()
-    }
-  };
-
-  Ogre.prototype.$Ogre_sendChangeEvents=function() {"use strict";
-    this.$Ogre_emitter.emit( CHANGE_KEY, this.$Ogre_changedKeys )
-    this.$Ogre_changedKeys= []
-    this.$Ogre_timer= null
-  };
-
-  Ogre.prototype.$Ogre_clearKeyCache=function() {"use strict";
-    keyParts.clearCache()
-  };
-
-
-
-Ogre.version= version
-
-// Helpers
-
-module.exports= Ogre
-
-},{"./cursor":8,"./util":10,"./version":11,"elucidata-type":1,"eventemitter3":3,"react/lib/Object.assign":4,"react/lib/update":7}],10:[function(require,module,exports){
-var type= require( 'elucidata-type')
-
-function findPath( path, source, create, containerType ) {
-  path= path || ''
-  source= source || {}
-  create= (create === true) ? true : false
-
-  if( path === '') {
-    return source
-  }
-
-  var parts= keyParts( path ),
-      obj= source, key;
-
-  while( obj && parts.length ) {
-    key= parts.shift()
-
-    if( create && type.isUndefined( obj[key] ) ) {
-
-      if( parts.length === 0 && containerType === 'array') {
-        obj[ key ]= []
-      }
-      else {
-        obj[ key ]= {}
-      }
-    }
-
-    obj= obj[ key ]
-  }
-
-  return obj
-}
-
-function buildSpecGraph( path, spec ) {
-  path= path || ''
-  spec= spec || {}
-
-  var graph= {}
-  if( path === '') return graph
-
-
-  var parts= keyParts( path ),
-      obj= graph, key;
-
-  while( parts.length ) {
-    key= parts.shift()
-
-    if( parts.length === 0 ) {
-      obj[ key ]= spec
-    }
-    else {
-      obj[ key ]= {}
-    }
-
-    obj= obj[ key ]
-  }
-
-  return graph
-}
-
-function keyParts( path ) {
-  var arr;
-
-  if( type.isArray( path)) {
-    return path.concat()
-  }
-
-  if( arr= keyCache[path] ) { // jshint ignore:line
-    return arr.concat()
-  }
-  else {
-    arr= keyCache[ path ]= path.split('.')
-    return arr.concat()
-  }
-}
-
-var keyCache= {
-  '': ['']
-}
-
-keyParts.clearCache= function() {
-  keyCache= {
-    '': ['']
-  }
-}
-
-var _last_id = 0
-
-function uid ( radix){
-  var now = Math.floor( (new Date()).getTime() / 1000 )
-  radix= radix || 36
-
-  while ( now <= _last_id ) {
-    now += 1
-  }
-
-  _last_id= now
-
-  return now.toString( radix)
-}
-
-/* global performance */
-var now= (function(){
-  if( typeof performance === 'object' && performance.now ) {
-    return performance.now.bind( performance )
-  }
-  else if( Date.now ) {
-    return Date.now.bind(Date)
-  }
-  else {
-    return function() {
-      return (new Date()).getTime()
-    }
-  }
-})()
-
-function startsWith( haystack, needle) {
-  // position = position || 0;
-  // return haystack.lastIndexOf(needle, position) === position;
-  return haystack.indexOf( needle) == 0
-}
-
-
-module.exports= {
-  keyParts:keyParts,
-  findPath:findPath,
-  buildSpecGraph:buildSpecGraph,
-  uid:uid,
-  now:now,
-  startsWith:startsWith
-}
-
-},{"elucidata-type":1}],11:[function(require,module,exports){
-module.exports= "0.3.6";
-},{}]},{},[9])(9)
+},{"./Object.assign":9,"./invariant":10,"./keyOf":11}]},{},[1])(1)
 });
