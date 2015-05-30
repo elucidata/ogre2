@@ -882,7 +882,9 @@ var type= require( 'elucidata-type'),
   Cursor.prototype.onChange=function(handler) {"use strict";
     onSourceChange( this.source, this.basePath, handler)
 
-    return this
+    return function()  {
+      offSourceChange( this.source, this.basePath, handler)
+    }.bind(this)
   };
 
   Cursor.prototype.offChange=function(handler) {"use strict";
@@ -1063,7 +1065,8 @@ var type= require( 'elucidata-type'),
     EventEmitter= require( 'eventemitter3'), // require( 'events').EventEmitter, //
     Cursor= require( './cursor'),
     CHANGE_KEY= 'change',
-    $__0=   require( './util'),keyParts=$__0.keyParts,findPath=$__0.findPath,buildSpecGraph=$__0.buildSpecGraph
+    $__0=   require( './util'),keyParts=$__0.keyParts,findPath=$__0.findPath,buildSpecGraph=$__0.buildSpecGraph,
+    version= require( './version')
 
     // keyParts= util.keyParts,
     // findPath= util.findPath,
@@ -1198,7 +1201,9 @@ var type= require( 'elucidata-type'),
 
   Ogre.prototype.onChange=function(fn)  {"use strict";
     this.$Ogre_emitter.on( CHANGE_KEY, fn )
-    return this
+    return function()  {
+      this.$Ogre_emitter.removeListener( CHANGE_KEY, fn )
+    }.bind(this)
   };
 
   Ogre.prototype.offChange=function(fn)  {"use strict";
@@ -1272,11 +1277,13 @@ var type= require( 'elucidata-type'),
 
 
 
+Ogre.version= version
+
 // Helpers
 
 module.exports= Ogre
 
-},{"./cursor":8,"./util":10,"elucidata-type":1,"eventemitter3":3,"react/lib/Object.assign":4,"react/lib/update":7}],10:[function(require,module,exports){
+},{"./cursor":8,"./util":10,"./version":11,"elucidata-type":1,"eventemitter3":3,"react/lib/Object.assign":4,"react/lib/update":7}],10:[function(require,module,exports){
 var type= require( 'elucidata-type')
 
 function findPath( path, source, create, containerType ) {
@@ -1409,5 +1416,7 @@ module.exports= {
   startsWith:startsWith
 }
 
-},{"elucidata-type":1}]},{},[9])(9)
+},{"elucidata-type":1}],11:[function(require,module,exports){
+module.exports= "0.3.6";
+},{}]},{},[9])(9)
 });
