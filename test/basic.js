@@ -8,6 +8,7 @@ test( 'Basic tests', function( t ){
 
   t.notEqual( Ogre, null, "exported value is not null" )
   t.equal( typeof Ogre, 'function', "exported value is a function" )
+  t.equal( typeof Ogre.version, 'string', "exported .version string" )
 
   t.end()
 })

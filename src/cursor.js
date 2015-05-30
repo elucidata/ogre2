@@ -16,7 +16,9 @@ class Cursor {
   onChange( handler) {
     onSourceChange( this.source, this.basePath, handler)
 
-    return this
+    return () => {
+      offSourceChange( this.source, this.basePath, handler)
+    }
   }
 
   offChange( handler) {

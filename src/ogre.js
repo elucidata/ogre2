@@ -7,7 +7,8 @@ var type= require( 'elucidata-type'),
     EventEmitter= require( 'eventemitter3'), // require( 'events').EventEmitter, //
     Cursor= require( './cursor'),
     CHANGE_KEY= 'change',
-    {keyParts, findPath, buildSpecGraph}= require( './util')
+    {keyParts, findPath, buildSpecGraph}= require( './util'),
+    version= require( './version')
 
     // keyParts= util.keyParts,
     // findPath= util.findPath,
@@ -142,7 +143,9 @@ class Ogre  {
 
   onChange( fn ) {
     this._emitter.on( CHANGE_KEY, fn )
-    return this
+    return () => {
+      this._emitter.removeListener( CHANGE_KEY, fn )
+    }
   }
 
   offChange( fn ) {
@@ -215,6 +218,8 @@ class Ogre  {
   }
 
 }
+
+Ogre.version= version
 
 // Helpers
 

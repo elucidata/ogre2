@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Object Graph engine",
   "main": "index.js",
   "license": "MIT",
@@ -40,10 +40,11 @@
     "test": "tape test/*.js | tap-spec",
     "test-browser": "browserify -t reactify test/*.js | testlingify",
     "toc": "mdtoc ReadMe.md ReadMe.md",
+    "update-ver": "node ./update-ver.js",
     "gz-size": "gzip -c dist/ogre.min.js | wc -c | pretty-bytes",
-    "inc-major": "mversion major",
-    "inc-minor": "mversion minor",
-    "inc-patch": "mversion patch"
+    "inc-major": "mversion major && npm run update-ver",
+    "inc-minor": "mversion minor && npm run update-ver",
+    "inc-patch": "mversion patch && npm run update-ver"
   },
   "author": "Matt McCray <matt@elucidata.net>",
   "dependencies": {

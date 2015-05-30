@@ -89,7 +89,10 @@ Note: Stored revisions of the graph are for the whole tree.
 ### `indexOf( path, value )`
 ### `reduce( path, fn, initialValue )`
 
-### `onChange( handlerFn )`
+### `onChange( handlerFn ):function`
+
+Returns a function that, when called, will unsubscribe `handlerFn` from the event. (Use for supporting anonymous, inline callbacks).
+
 ### `offChange( handlerFn )`
 
 ### `isUndefined( path )`
