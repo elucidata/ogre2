@@ -28,7 +28,7 @@ class Cursor {
   }
 
   getFullPath( path ) {
-      var subPath= this.basePath
+      let subPath= this.basePath
 
       if( path ) {
         if( type.isArray( path )) {
@@ -52,22 +52,22 @@ class Cursor {
 
   // Just for internal, testing, usage!
   static listenerInfo( full=false ) {
-    var totalSources= _eventsForSource.size,
+    let totalSources= _eventsForSource.size,
         totalKeyWatches= 0,
         totalEventHandlers= 0
 
     _eventsForSource.forEach(( keyMap, source )=>{
       Object.keys( keyMap ).forEach( key =>{
-        var handlers= keyMap[ key ]
+        let handlers= keyMap[ key ]
         totalKeyWatches += 1
         totalEventHandlers += handlers.length
       })
     })
 
-    var report= { totalSources, totalKeyWatches, totalEventHandlers }
+    const report= { totalSources, totalKeyWatches, totalEventHandlers }
 
     // if( full) {
-    //   var handlers= ( JSON.stringify(_eventsForSource))
+    //   let handlers= ( JSON.stringify(_eventsForSource))
     //   report.events_for_source= handlers
     //   console.dir( handlers)
     // }
@@ -87,7 +87,7 @@ class Cursor {
 ].map( method => {
 
   Cursor.prototype[ method ]= function(...args) {
-    var argsLen= args.length, path, params
+    let argsLen= args.length, path, params
     if( argsLen === 0 ) {
       return this.source[ method ].call( this.source, this.basePath)
     }
@@ -109,7 +109,7 @@ class Cursor {
 
 })
 
-var _eventsForSource= new Map(),
+let _eventsForSource= new Map(),
     _sourceHandlers= new WeakMap(),
     _assumedValueMethods= new Set([
       'set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each',
@@ -147,7 +147,7 @@ function offSourceChange( source, key, handler) {
 
 function handleEventsFor( source) {
   if(! _eventsForSource.has( source)) {
-    var handler= globalEventHandler.bind( this, source)
+    let handler= globalEventHandler.bind( this, source)
 
     source.onChange( handler)
     _eventsForSource.set( source, { })

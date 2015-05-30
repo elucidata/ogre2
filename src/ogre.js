@@ -46,7 +46,7 @@ class Ogre  {
   get( path, defaultValue ) {
     if( path === '' || path == null ) return this._root // jshint ignore:line
 
-    var value= findPath( path, this._root)
+    let value= findPath( path, this._root)
 
     if( type.isUndefined( value))
       return defaultValue
@@ -81,9 +81,9 @@ class Ogre  {
   }
 
   find( path, fn ) {
-    var items= this.get( path, [] ), i, l;
+    let items= this.get( path, [] ), i, l;
     for (i= 0, l= items.length; i < l; i++) {
-      var item= items[i]
+      let item= items[i]
       if( fn( item ) === true ) {
         return item
       }
@@ -121,7 +121,7 @@ class Ogre  {
   }
 
   splice( path, start, howMany, ...items ) {
-    var spec
+    let spec
     if( arguments.length === 2 ) {
       spec= { $splice:start }
     }
