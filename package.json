@@ -31,7 +31,8 @@
   },
   "scripts": {
     "all": "npm run build && npm run dist && npm run example && npm run test",
-    "build": "jsx --no-cache-dir --harmony src lib",
+    "build": "babel src/ -d lib/ --stage 0 --loose",
+    "buildOLD": "jsx --no-cache-dir --harmony src lib",
     "dist": "NODE_ENV=production browserify src/ogre.js -o dist/ogre.js --standalone Ogre && npm run minify",
     "example": "NODE_ENV=development browserify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js",
     "watch": "watchify src/ogre.js -o dist/ogre.js --standalone Ogre --debug --verbose",
@@ -64,6 +65,8 @@
     "random-color": "0.0.1",
     "envify": "^3.0.0",
     "stripify": "^1.2.0",
-    "mversion": "^1.7.0"
+    "mversion": "^1.7.0",
+    "babelify": "^6.1.2",
+    "babel": "^5.4.7"
   }
 }

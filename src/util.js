@@ -1,6 +1,7 @@
-var type= require( 'elucidata-type')
+import type from 'elucidata-type'
+// var type= require( 'elucidata-type')
 
-function findPath( path, source, create, containerType ) {
+export function findPath( path, source, create, containerType ) {
   path= path || ''
   source= source || {}
   create= (create === true) ? true : false
@@ -31,7 +32,7 @@ function findPath( path, source, create, containerType ) {
   return obj
 }
 
-function buildSpecGraph( path, spec ) {
+export function buildSpecGraph( path, spec ) {
   path= path || ''
   spec= spec || {}
 
@@ -58,7 +59,7 @@ function buildSpecGraph( path, spec ) {
   return graph
 }
 
-function keyParts( path ) {
+export function keyParts( path ) {
   var arr;
 
   if( type.isArray( path)) {
@@ -86,7 +87,7 @@ keyParts.clearCache= function() {
 
 var _last_id = 0
 
-function uid ( radix){
+export function uid ( radix){
   var now = Math.floor( (new Date()).getTime() / 1000 )
   radix= radix || 36
 
@@ -100,7 +101,7 @@ function uid ( radix){
 }
 
 /* global performance */
-var now= (()=>{
+export var now= (()=>{
   if( typeof performance === 'object' && performance.now ) {
     return performance.now.bind( performance )
   }
@@ -114,18 +115,18 @@ var now= (()=>{
   }
 })()
 
-function startsWith( haystack, needle) {
+export function startsWith( haystack, needle) {
   // position = position || 0;
   // return haystack.lastIndexOf(needle, position) === position;
   return haystack.indexOf( needle) == 0
 }
 
 
-module.exports= {
-  keyParts,
-  findPath,
-  buildSpecGraph,
-  uid,
-  now,
-  startsWith
-}
+// module.exports= {
+//   keyParts,
+//   findPath,
+//   buildSpecGraph,
+//   uid,
+//   now,
+//   startsWith
+// }

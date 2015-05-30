@@ -13,6 +13,7 @@ test( 'Basic cursor tests', function( t ){
   t.equal( typeof Ogre, 'function', "exported value is a function" )
 
   test( '.scopeTo( path)', function(t){
+
     var src= { name:'Ogre', info:{ version:2, more:{ extra:{ value:'STUFF' } }} },
         ds= new Ogre(src)
 
@@ -177,17 +178,17 @@ test( 'Sub-tree events (extracted from app)', function ( t){
   setTimeout(function(){
     var expected= { totalEventHandlers: 2, totalKeyWatches: 2, totalSources: 1 }
     t.deepLooseEqual( Cursor.listenerInfo(), expected)
-    t.equal( src.$Ogre_emitter.listeners('change').length, 2, 'only two listeners on the source object' )
+    t.equal( src._emitter.listeners('change').length, 2, 'only two listeners on the source object' )
 
-    // console.log( src.$Ogre_emitter.listeners('change') )
-    // console.log( src.$Ogre_emitter.listeners('change', true) )
+    // console.log( src._emitter.listeners('change') )
+    // console.log( src._emitter.listeners('change', true) )
 
     src.offChange( root_onChange)
 
-    // console.log( src.$Ogre_emitter.listeners('change') )
-    // console.log( src.$Ogre_emitter.listeners('change', true) )
+    // console.log( src._emitter.listeners('change') )
+    // console.log( src._emitter.listeners('change', true) )
 
-    t.equal( src.$Ogre_emitter.listeners('change').length, 1, 'now only one' )
+    t.equal( src._emitter.listeners('change').length, 1, 'now only one' )
 
     t.deepLooseEqual( Cursor.listenerInfo(), expected)
 
@@ -201,8 +202,8 @@ test( 'Sub-tree events (extracted from app)', function ( t){
     expected= { totalEventHandlers: 0, totalKeyWatches: 0, totalSources: 0 }
     t.deepLooseEqual( Cursor.listenerInfo(), expected)
 
-    // console.log( src.$Ogre_emitter.listeners('change') )
-    // console.log( src.$Ogre_emitter.listeners('change', true) )
+    // console.log( src._emitter.listeners('change') )
+    // console.log( src._emitter.listeners('change', true) )
   }, 400)
 
 })
