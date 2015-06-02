@@ -6,7 +6,7 @@ class Cursor {
 
   constructor( source, basePath ) {
     this.source = source
-    this.basePath = type.isArray( basePath) ? basePath.join( '.') : basePath
+    this.basePath = type.isArray( basePath ) ? basePath.join( '.' ) : basePath
   }
 
   scopeTo( path ) {
@@ -34,7 +34,7 @@ class Cursor {
         if( type.isArray( path )) {
           if( path.length > 0 ) {
             subPath += '.'
-            subPath += path.join( '.')
+            subPath += path.join( '.' )
           }
         }
         else {
@@ -78,32 +78,36 @@ class Cursor {
 }
 
 
-[ // Build pass-thru methods...
+([ // Build pass-thru methods...
   'get', 'getPrevious', 'set', 'has', 'merge', 'push', 'unshift', 'splice',
   'map', 'each', 'forEach', 'reduce', 'filter', 'find', 'indexOf', 'isUndefined',
   'isNotUndefined', 'isDefined', 'isNull', 'isNotNull', 'isEmpty', 'isNotEmpty',
   'isString', 'isNotString', 'isArray', 'isNotArray', 'isObject', 'isNotObject',
   'isNumber', 'isNotNumber'
-].map( method => {
+]).map( method => {
 
-  Cursor.prototype[ method ]= function(...args) {
-    let argsLen= args.length, path, params
+  Cursor.prototype[ method ] = function( ...args ) {
+    let argsLen = args.length, path, params
+
     if( argsLen === 0 ) {
-      return this.source[ method ].call( this.source, this.basePath)
+      return this.source[ method ].call( this.source, this.basePath )
     }
     else if( argsLen === 1 ) {
-      path= args[ 0]
-      if( _assumedValueMethods.has( method)) {
-        return this.source[ method ].call( this.source, this.basePath, path)
+      path = args[ 0 ]
+
+      //if( _assumedValueMethods.has( method )) {
+      if( _assumedValueMethods.indexOf( method ) >= 0 ) {
+        return this.source[ method ].call( this.source, this.basePath, path )
       }
       else {
         return this.source[ method ].call( this.source, this.getFullPath( path ))
       }
     }
     else {
-      [path, ...params]= args
-      params.unshift( this.getFullPath( path))
-      return this.source[ method].apply( this.source, params)
+      [path, ...params] = args
+
+      params.unshift( this.getFullPath( path ) )
+      return this.source[ method ].apply( this.source, params )
     }
   }
 
@@ -111,32 +115,32 @@ class Cursor {
 
 let _eventsForSource= new Map(),
     _sourceHandlers= new WeakMap(),
-    _assumedValueMethods= new Set([
+    _assumedValueMethods= [
       'set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each',
       'forEach', 'reduce', 'filter', 'find'
-    ])
+    ]
 
 
 function onSourceChange( source, key, handler ) {
   handleEventsFor( source )
 
-  let keyMap= _eventsForSource.get( source )
+  let keyMap = _eventsForSource.get( source )
 
-  keyMap[ key ]= keyMap[ key ] || []
+  keyMap[ key ] = keyMap[ key ] || []
   keyMap[ key ].push( handler )
 }
 
-function offSourceChange( source, key, handler) {
-  let keyMap= _eventsForSource.get( source)
+function offSourceChange( source, key, handler ) {
+  let keyMap = _eventsForSource.get( source )
 
-  keyMap[ key]= keyMap[ key] || []
-  keyMap[ key].splice(  keyMap[ key].indexOf( handler), 1)
+  keyMap[ key ] = keyMap[ key ] || []
+  keyMap[ key ].splice( keyMap[ key ].indexOf( handler ), 1 )
 
-  if( keyMap[ key].length === 0 ) {
-    delete keyMap[ key]
+  if( keyMap[ key ].length === 0 ) {
+    delete keyMap[ key ]
 
-    if( Object.keys( keyMap).length === 0) {
-      let srcHandler= _sourceHandlers.get( source )
+    if( Object.keys( keyMap ).length === 0 ) {
+      let srcHandler = _sourceHandlers.get( source )
 
       source.offChange( srcHandler )
       _sourceHandlers.delete( source )
@@ -167,13 +171,13 @@ function globalEventHandler( source, changedPaths) {
 
   if( trackedPaths && trackedPaths.length ) {
     for( let i=0; i< trackedPaths.length; i++) {
-      let trackPath= trackedPaths[ i]
+      let trackPath= trackedPaths[ i ]
 
       for( let j=0; j< changedPaths.length; j++) {
         let changedPath= changedPaths[ j]
 
         if( startsWith( changedPath, trackPath)) {
-          let cursor_callbacks= trackedMap[ trackPath]
+          let cursor_callbacks= trackedMap[ trackPath ]
 
           callbacks= callbacks.concat( cursor_callbacks)
           break
@@ -182,9 +186,9 @@ function globalEventHandler( source, changedPaths) {
     }
   }
 
-  if( callbacks.length) {
-    callbacks.forEach(( fn)=>{
-      fn( changedPaths)
+  if( callbacks.length ) {
+    callbacks.forEach( fn => {
+      fn( changedPaths )
     })
   }
 }

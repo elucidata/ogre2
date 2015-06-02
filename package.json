@@ -1,6 +1,6 @@
 {
   "name": "ogre2",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Object Graph engine",
   "main": "index.js",
   "license": "MIT",
@@ -13,11 +13,12 @@
     "url": "git://github.com/elucidata/ogre2.git"
   },
   "scripts": {
-    "all": "npm run build && npm run dist && npm run example && npm run test",
+    "all": "npm run build && npm run build-browser-tests && npm run dist && npm run example && npm run test",
     "build": "babel src/ -d lib/ --stage 0 --loose",
+    "build-browser-tests": "browserify test/*.js -o dist/browser-tests/ogre-tests.js",
+    "watch": "babel -w src/ -d lib/ --stage 0 --loose",
     "dist": "NODE_ENV=production browserify index.js -o dist/ogre.js --standalone Ogre && npm run minify",
     "example": "NODE_ENV=development browserify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js -t [ babelify --stage 0 ]",
-    "watch": "watchify src/ogre.js -o dist/ogre.js --standalone Ogre --debug --verbose  -t [ babelify --stage 0 ]",
     "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js && npm run gz-size",
     "test": "tape test/*.js | tap-spec",
     "toc": "mdtoc ReadMe.md ReadMe.md",
@@ -31,7 +32,7 @@
   "dependencies": {
     "react": "^0.12.0",
     "elucidata-type": "^1.1.1",
-    "es6-collections": "^0.4.1",
+    "es6-collections": "^0.5.1",
     "eventemitter3": "^1.1.0"
   },
   "devDependencies": {

@@ -108,11 +108,14 @@ var Cursor = (function () {
     var argsLen = args.length,
         path = undefined,
         params = undefined;
+
     if (argsLen === 0) {
       return this.source[method].call(this.source, this.basePath);
     } else if (argsLen === 1) {
       path = args[0];
-      if (_assumedValueMethods.has(method)) {
+
+      //if( _assumedValueMethods.has( method )) {
+      if (_assumedValueMethods.indexOf(method) >= 0) {
         return this.source[method].call(this.source, this.basePath, path);
       } else {
         return this.source[method].call(this.source, this.getFullPath(path));
@@ -129,7 +132,7 @@ var Cursor = (function () {
 
 var _eventsForSource = new Map(),
     _sourceHandlers = new WeakMap(),
-    _assumedValueMethods = new Set(['set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each', 'forEach', 'reduce', 'filter', 'find']);
+    _assumedValueMethods = ['set', 'merge', 'push', 'unshift', 'splice', 'indexOf', 'map', 'each', 'forEach', 'reduce', 'filter', 'find'];
 
 function onSourceChange(source, key, handler) {
   handleEventsFor(source);
@@ -748,7 +751,7 @@ module.exports = "0.4.0";
   //shared pointer
   var i;
   //shortcuts
-  var defineProperty = Object.defineProperty, is = Object.is;
+  var defineProperty = Object.defineProperty, is = function(a,b) { return isNaN(a)? isNaN(b): a === b; };
 
 
   //Polyfill global objects
@@ -778,10 +781,12 @@ module.exports = "0.4.0";
       get: sharedGet,
       // Map#set(key:void*, value:void*):void
       set: sharedSet,
-      // Map#keys(void):Array === not in specs
+      // Map#keys(void):Iterator
       keys: sharedKeys,
-      // Map#values(void):Array === not in specs
+      // Map#values(void):Iterator
       values: sharedValues,
+      // Map#entries(void):Iterator
+      entries: mapEntries,
       // Map#forEach(callback:Function, context:void*):void ==> callback.call(context, key, value, mapObject) === not in specs`
       forEach: sharedForEach,
       // Map#clear():
@@ -799,8 +804,12 @@ module.exports = "0.4.0";
       'delete': sharedDelete,
       // Set#clear():
       clear: sharedClear,
-      // Set#values(void):Array === not in specs
+      // Set#keys(void):Iterator
+      keys: sharedValues, // specs actually say "the same function object as the initial value of the values property"
+      // Set#values(void):Iterator
       values: sharedValues,
+      // Set#entries(void):Iterator
+      entries: setEntries,
       // Set#forEach(callback:Function, context:void*):void ==> callback.call(context, value, index) === not in specs
       forEach: sharedSetIterate
     });
@@ -880,7 +889,7 @@ module.exports = "0.4.0";
     if (this.objectOnly && key !== Object(key))
       throw new TypeError("Invalid value used as weak collection key");
     //NaN or 0 passed
-    if (key != key || key === 0) for (i = list.length; i-- && !is(list[i], key););
+    if (key != key || key === 0) for (i = list.length; i-- && !is(list[i], key);){}
     else i = list.indexOf(key);
     return -1 < i;
   }
@@ -914,12 +923,36 @@ module.exports = "0.4.0";
   }
 
   /** keys, values, and iterate related methods */
-  function sharedValues() {
-    return this._values.slice();
+  function sharedKeys() {
+    return sharedIterator(this._keys);
   }
 
-  function sharedKeys() {
-    return this._keys.slice();
+  function sharedValues() {
+    return sharedIterator(this._values);
+  }
+
+  function mapEntries() {
+    return sharedIterator(this._keys, this._values);
+  }
+
+  function setEntries() {
+    return sharedIterator(this._values, this._values);
+  }
+
+  function sharedIterator(array, array2) {
+    var j = 0, done = false;
+    return {
+      next: function() {
+        var v;
+        if (!done && j < array.length) {
+          v = array2 ? [array[j], array2[j]]: array[j];
+          j += 1;
+        } else {
+          done = true;
+        }
+        return { done: done, value: v };
+      }
+    };
   }
 
   function sharedSize() {
