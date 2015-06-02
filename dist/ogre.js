@@ -647,7 +647,7 @@ function startsWith(haystack, needle) {
 },{"elucidata-type":6}],5:[function(require,module,exports){
 "use strict";
 
-module.exports = "0.4.0";
+module.exports = "0.4.1";
 },{}],6:[function(require,module,exports){
 (function() {
   var name, type, _elementTestRe, _fn, _i, _keys, _len, _ref, _typeList;
