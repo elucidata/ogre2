@@ -17,7 +17,7 @@
     "build": "babel src/ -d lib/ --stage 0 --loose",
     "build-browser-tests": "browserify test/*.js -o dist/browser-tests/ogre-tests.js",
     "watch": "babel -w src/ -d lib/ --stage 0 --loose",
-    "dist": "NODE_ENV=production browserify index.js -o dist/ogre.js --standalone Ogre && npm run minify",
+    "dist": "NODE_ENV=production browserify index.js -o dist/ogre.js --standalone Ogre -p bundle-collapser/plugin && npm run minify",
     "example": "NODE_ENV=development browserify example/src/visualize-changes.jsx -o example/js/visualize-changes-bundle.js -t [ babelify --stage 0 ]",
     "minify": "cat dist/ogre.js | uglifyjs -m -c > dist/ogre.min.js && npm run gz-size",
     "test": "tape test/*.js | tap-spec",
@@ -48,6 +48,7 @@
     "stripify": "^1.2.0",
     "mversion": "^1.7.0",
     "babelify": "^6.1.2",
-    "babel": "^5.4.7"
+    "babel": "^5.4.7",
+    "bundle-collapser": "^1.2.0"
   }
 }

@@ -1,20 +1,20 @@
 !function(e){if("object"==typeof exports&&"undefined"!=typeof module)module.exports=e();else if("function"==typeof define&&define.amd)define([],e);else{var f;"undefined"!=typeof window?f=window:"undefined"!=typeof global?f=global:"undefined"!=typeof self&&(f=self),f.Ogre=e()}}(function(){var define,module,exports;return (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-module.exports= require('./lib/ogre')
+module.exports= require(3)
 
-},{"./lib/ogre":3}],2:[function(require,module,exports){
+},{"3":3}],2:[function(require,module,exports){
 'use strict';
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-require('es6-collections');
+require(7);
 
-var _elucidataType = require('elucidata-type');
+var _elucidataType = require(6);
 
 var _elucidataType2 = _interopRequireDefault(_elucidataType);
 
-var _util = require('./util');
+var _util = require(4);
 
 var Cursor = (function () {
   function Cursor(source, basePath) {
@@ -207,7 +207,7 @@ function globalEventHandler(source, changedPaths) {
 }
 
 module.exports = Cursor;
-},{"./util":4,"elucidata-type":6,"es6-collections":7}],3:[function(require,module,exports){
+},{"4":4,"6":6,"7":7}],3:[function(require,module,exports){
 /**
  * Ogre 2
  */
@@ -217,29 +217,29 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'd
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError('Cannot call a class as a function'); } }
 
-var _elucidataType = require('elucidata-type');
+var _elucidataType = require(6);
 
 var _elucidataType2 = _interopRequireDefault(_elucidataType);
 
-var _reactLibUpdate = require('react/lib/update');
+var _reactLibUpdate = require(12);
 
 var _reactLibUpdate2 = _interopRequireDefault(_reactLibUpdate);
 
-var _reactLibObjectAssign = require('react/lib/Object.assign');
+var _reactLibObjectAssign = require(9);
 
 var _reactLibObjectAssign2 = _interopRequireDefault(_reactLibObjectAssign);
 
-var _eventemitter3 = require('eventemitter3');
+var _eventemitter3 = require(8);
 
 var _eventemitter32 = _interopRequireDefault(_eventemitter3);
 
-var _cursor = require('./cursor');
+var _cursor = require(2);
 
 var _cursor2 = _interopRequireDefault(_cursor);
 
-var _util = require('./util');
+var _util = require(4);
 
-var _version = require('./version');
+var _version = require(5);
 
 var _version2 = _interopRequireDefault(_version);
 
@@ -510,7 +510,7 @@ function argCheck(args) {
 }
 
 module.exports = Ogre;
-},{"./cursor":2,"./util":4,"./version":5,"elucidata-type":6,"eventemitter3":8,"react/lib/Object.assign":9,"react/lib/update":12}],4:[function(require,module,exports){
+},{"12":12,"2":2,"4":4,"5":5,"6":6,"8":8,"9":9}],4:[function(require,module,exports){
 'use strict';
 
 exports.__esModule = true;
@@ -522,7 +522,7 @@ exports.startsWith = startsWith;
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { 'default': obj }; }
 
-var _elucidataType = require('elucidata-type');
+var _elucidataType = require(6);
 
 var _elucidataType2 = _interopRequireDefault(_elucidataType);
 
@@ -644,7 +644,7 @@ function startsWith(haystack, needle) {
   // return haystack.lastIndexOf(needle, position) === position;
   return haystack.indexOf(needle) == 0;
 }
-},{"elucidata-type":6}],5:[function(require,module,exports){
+},{"6":6}],5:[function(require,module,exports){
 "use strict";
 
 module.exports = "0.4.1";
@@ -1391,9 +1391,9 @@ module.exports = keyOf;
 
 "use strict";
 
-var assign = require("./Object.assign");
-var keyOf = require("./keyOf");
-var invariant = require("./invariant");
+var assign = require(9);
+var keyOf = require(11);
+var invariant = require(10);
 
 function shallowCopy(x) {
   if (Array.isArray(x)) {
@@ -1543,5 +1543,5 @@ function update(value, spec) {
 
 module.exports = update;
 
-},{"./Object.assign":9,"./invariant":10,"./keyOf":11}]},{},[1])(1)
+},{"10":10,"11":11,"9":9}]},{},[1])(1)
 });
